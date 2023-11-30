@@ -1,3 +1,18 @@
+# Local defined ones
+/narration
+/frames/*
+!/frames/.gitkeep
+
+# Mac
+.DS_Store
+.DocumentRevisions-V100
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+
+# Defaults from Github
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
