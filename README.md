@@ -11,8 +11,9 @@ This is a solution to provide partially sighted and blind people with guidance a
 
 # Setup
 
-* Install instructions are focused on VisGuide on RPI Zero 2. They do also work for MAC but you would be better using Conda in place of Virtualenv
-* Start with a new "Raspberry Pi OS of Raspberry Pi OS (Legacy, 64-bit) Full"
+* Install instructions are focused on VisGuide on RPI Zero 2. 
+* They do also work for MAC but you would be better using Conda in place of Virtualenv
+* If deploying on RPi Zero, start with a new "Raspberry Pi OS of Raspberry Pi OS (Legacy, 64-bit) Full". 32-bit Lite OS will NOT work.
 
 ### Increase swap to 2048
 This is overkill and could be smaller but I had 64GB to play with. You might not NEED this.
