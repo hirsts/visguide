@@ -54,6 +54,7 @@ python capture.py
 ### Setup the main VisGuide process
 open new terminal session and activate the python environment
 ```bash
+cd visguide
 source visguide-env/bin/activate
 ```
 ### Elevenlabs
@@ -77,6 +78,15 @@ Once you have your key either run the below or update the .env file and rerun `s
 ```bash
 export OPENAI_API_KEY="<apikey>"
 ```
+#### Narrative Prompts
+The prompts used to create the narrative are either used from the environment variable CONTEXT or a default defined in the code if CONTEXT isn't populated. Sample prompts are stored in prompts.txt
+
+To use either your own, or one of the example prompts, use:\
+**_NOTE:_** Don't forget to use the quote marks
+```bash
+export CONTEXT="<prompt>"
+```
+
 
 
 ### Run the main process
