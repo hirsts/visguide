@@ -86,10 +86,10 @@ To use either your own, or one of the example prompts, use:\
 ```bash
 export CONTEXT="<prompt>"
 ```
-
-
-
 ### Run the main process
 ```bash
 python visguide.py
 ```
+### Logging & Debug
+Python logging is implemented and there are two command line options. If you add "-v" to the command line then INFO level logging is applied with millisecond timing. the second option is "-d" or "--debug" with enables detailed debug logging.\
+> **_NOTE_**: Logging is currently to console only as dont want to slow down the end the end process with writing to disk, or in the case of the RPi Zero, the SD card which is slow.
