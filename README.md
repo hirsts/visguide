@@ -1,13 +1,6 @@
 # VisGuide
-This is a solution to provide partially sighted and blind people with guidance and to avoid obstacles and risk. This currently provides a description of whats in front and notable items and issues. Future versions will enable interactivity such as the user being able to ask "where is the bus stop" or "can you see the toilets".
+This is a solution to provide partially sighted and blind people with guidance and to avoid obstacles and risk. This currently provides a description of whats in front, notable items and issues. Future versions will enable interactivity such as the user being able to ask "where is the bus stop" or "can you see the toilets".
 
-> visguide.py runs each step of the process locally which is inefficient and creates latency. visguide-api.py uses the external VisGuide service which speeds up the process to provide a more realtime service for the user. Use visguide.py for now and this document will be updated once the VisGuide API is fully working.
-
-> Testing was performed using a Plantronics BT Headset which worked great. To add this it was easiest to use the Raspberry Pi desktop to add it like a normal consumer BT device. It now auto connects to both the mobile and VisGuide when you power it on. Future versions will work with other headsets and also allow the user to press the "talk" button and speak commands to VisGuide.
-
-> Costs on OpenAI and Elevenlabs need investigating. Also need to explore using our own AI services to manage costs, reduce latency and to preserve privacy. This could by Ollama models behind an API gateway or maybe using "themartian" for routing.
-
-![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)
 
 # Setup
 
@@ -94,3 +87,14 @@ python visguide.py
 ### Logging & Debug
 Python logging is implemented and there are two command line options. If you add "-v" to the command line then INFO level logging is applied with millisecond timing. the second option is "-d" or "--debug" with enables detailed debug logging.\
 > **_NOTE_**: Logging is currently to console only as dont want to slow down the end the end process with writing to disk, or in the case of the RPi Zero, the SD card which is slow.
+
+# VisGuide Development Notes
+> visguide.py runs each step of the process locally which is inefficient and creates latency. visguide-api.py uses the external VisGuide service which speeds up the process to provide a more realtime service for the user. Use visguide.py for now and this document will be updated once the VisGuide API is fully working.
+
+> Testing was performed using a Plantronics BT Headset which worked great. To add this it was easiest to use the Raspberry Pi desktop to add it like a normal consumer BT device. It now auto connects to both the mobile and VisGuide when you power it on. Future versions will work with other headsets and also allow the user to press the "talk" button and speak commands to VisGuide.
+
+> Costs on OpenAI and Elevenlabs need investigating. Also need to explore using our own AI services to manage costs, reduce latency and to preserve privacy. This could by Ollama models behind an API gateway or maybe using "themartian" for routing.
+
+> Speeding it up: The next iteration of dev will take two specific approaches to speed up the user experience. **_First;_** grabbing the camera image will become part of the main visguide.py to negate the need for writing the image to disk and just using it from memory and the **_second;_** is to chunk the narration into sentences and send each to ElevenLabs separately to provide the WAV audio. This will hopefully result in a faster start of narration and whilst the first sentence is being played, the remainder is being rendered ready for playing.
+
+![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)
