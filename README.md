@@ -11,7 +11,7 @@ This is a solution to provide partially sighted and blind people with guidance a
 
 # Setup
 
-* Install instructions for VisGuide on RPI Zero 2
+* Install instructions are focused on VisGuide on RPI Zero 2. They do also work for MAC but you would be better using Conda in place of Virtualenv
 * Start with a new "Raspberry Pi OS of Raspberry Pi OS (Legacy, 64-bit) Full"
 
 ### Increase swap to 2048
