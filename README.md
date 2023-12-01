@@ -97,4 +97,6 @@ Python logging is implemented and there are two command line options. If you add
 
 > Speeding it up: The next iteration of dev will take two specific approaches to speed up the user experience. **_First;_** grabbing the camera image will become part of the main visguide.py to negate the need for writing the image to disk and just using it from memory and the **_second;_** is to chunk the narration into sentences and send each to ElevenLabs separately to provide the WAV audio. This will hopefully result in a faster start of narration and whilst the first sentence is being played, the remainder is being rendered ready for playing.
 
+> Hallucination: Whilst testing is has become apparent that there is fundamental hallucination happening as it described me as wearing glasses but I'm not! I need to explore prompts that prevent such fundamental hallucination. What if it hallucinates and says that its safe to cross the road and it isn't....
+
 ![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)

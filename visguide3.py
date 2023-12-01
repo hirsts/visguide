@@ -1,5 +1,8 @@
 import argparse
 import os
+import cv2
+from PIL import Image
+import numpy as np
 import base64
 import time
 import logging
@@ -28,6 +31,14 @@ else:
 
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
+
+### Initialize the webcam
+cap = cv2.VideoCapture(0)
+# Check if the webcam is opened correctly
+if not cap.isOpened():
+    raise IOError("Cannot open webcam")
+# Wait for the camera to initialize and adjust light levels
+time.sleep(2)
 
 # Create an OpenAI client
 client = OpenAI()
