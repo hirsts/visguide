@@ -5,7 +5,7 @@ This is a solution to provide partially sighted and blind people with guidance a
 
 > Testing was performed using a Plantronics BT Headset which worked great. To add this it was easiest to use the Raspberry Pi desktop to add it like a normal consumer BT device. It now auto connects to both the mobile and VisGuide when you power it on. Future versions will work with other headsets and also allow the user to press the "talk" button and speak commands to VisGuide.
 
-![Picture of VisGuide and Headset](https://github.com/shirst/visguide/blob/main/image.jpg?raw=true)
+![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)
 
 # Setup
 
