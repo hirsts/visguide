@@ -67,7 +67,8 @@ export ELEVENLABS_VOICE_ID="<voice-id>"
 ```
 
 ### OpenAI
-You will need an API Key from OpenAI and you can follow the instructions from here to get it: https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt
+You will need an API Key from OpenAI and you can follow the instructions from here to get it:\
+ https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt
 
 Once you have your key either run the below or update the .env file and rerun `source .env`\
 **_NOTE:_** Don't miss using the quotes
