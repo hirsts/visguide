@@ -8,20 +8,26 @@ import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import generate, play, set_api_key, voices
 
-# Setup logging
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Get options from command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--debug", action="store_true")
+parser.add_argument("-v", "--verbose", action="store_true")
+parser.add_argument("-d", "--debug", action="store_true")
 args = parser.parse_args()
 
-# Set logging level based on debug flag
-if args.debug:
-    logger.setLevel(logging.DEBUG)
+# Set the logging level based on the verbose and debug options
+if args.verbose:
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO)
+elif args.debug:
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARNING)
+
+# Set the logging level based on the verbose and debug options
+logger = logging.getLogger()
 
 # Create an OpenAI client
 client = OpenAI()
@@ -108,7 +114,7 @@ def main():
             base64_image = encode_image(image_path)
             timings['image_encoding'] += time.time() - start_time
 
-            logger.debug("👀 VisGuide is watching...")
+            logger.info("👀 VisGuide is watching...")
             analysis_start_time = time.time()
             analysis = analyze_image(base64_image, script=script)
             timings['analysis'] += time.time() - analysis_start_time

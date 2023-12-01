@@ -1,16 +1,41 @@
+import argparse
 import os
-from openai import OpenAI
 import base64
-import json
 import time
-import simpleaudio as sa
+import logging
 import errno
+import simpleaudio as sa
+from openai import OpenAI
 from elevenlabs import generate, play, set_api_key, voices
 
+# Get options from command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", "--verbose", action="store_true")
+parser.add_argument("-d", "--debug", action="store_true")
+args = parser.parse_args()
+
+# Set the logging level based on the verbose and debug options
+if args.verbose:
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO)
+elif args.debug:
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARNING)
+
+# Set the logging level based on the verbose and debug options
+logger = logging.getLogger()
+
+# Create an OpenAI client
 client = OpenAI()
 
+# Set the ElevenLabs API key 
 set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
+# Define a function to encode an image as base64
 def encode_image(image_path):
     while True:
         try:
@@ -18,25 +43,26 @@ def encode_image(image_path):
                 return base64.b64encode(image_file.read()).decode("utf-8")
         except IOError as e:
             if e.errno != errno.EACCES:
-                # Not a "file in use" error, re-raise
+                logger.error(f"IOError encountered: {e}")
                 raise
-            # File is being written to, wait a bit and retry
+            logger.debug("Waiting for file to become accessible...")
             time.sleep(0.1)
 
-
 def play_audio(text):
-    audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
+    try:
+        audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
 
-    unique_id = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8").rstrip("=")
-    dir_path = os.path.join("narration", unique_id)
-    os.makedirs(dir_path, exist_ok=True)
-    file_path = os.path.join(dir_path, "audio.wav")
+        unique_id = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8").rstrip("=")
+        dir_path = os.path.join("narration", unique_id)
+        os.makedirs(dir_path, exist_ok=True)
+        file_path = os.path.join(dir_path, "audio.wav")
 
-    with open(file_path, "wb") as f:
-        f.write(audio)
+        with open(file_path, "wb") as f:
+            f.write(audio)
 
-    play(audio)
-
+        play(audio)
+    except Exception as e:
+        logger.error(f"Error in play_audio: {e}")
 
 def generate_new_line(base64_image):
     return [
@@ -52,53 +78,64 @@ def generate_new_line(base64_image):
         },
     ]
 
-
 def analyze_image(base64_image, script):
-    # Use the CONTEXT environment variable if it's set, otherwise use the default prompt
-    context = os.environ.get('CONTEXT', """
-        You are Sir David Attenborough. Narrate the picture of the human as if it is a nature documentary.
-        Make it snarky and funny. Don't repeat yourself. Make it short. If I do anything remotely interesting, make a big deal about it!
-    """)
-    response = client.chat.completions.create(
-        model="gpt-4-vision-preview",
-        messages=[
-            {
-                "role": "system",
-                "content": context,
-            },
-        ]
-        + script
-        + generate_new_line(base64_image),
-        max_tokens=500,
-    )
-    response_text = response.choices[0].message.content
-    return response_text
-
+    try:
+        context = os.environ.get('CONTEXT', """
+            You are Sir David Attenborough. Narrate the picture of the human as if it is a nature documentary.
+            Make it snarky and funny. Don't repeat yourself. Make it short. If I do anything remotely interesting, make a big deal about it!
+        """)
+        response = client.chat.completions.create(
+            model="gpt-4-vision-preview",
+            messages=[
+                {
+                    "role": "system",
+                    "content": context,
+                },
+            ]
+            + script
+            + generate_new_line(base64_image),
+            max_tokens=500,
+        )
+        response_text = response.choices[0].message.content
+        return response_text
+    except Exception as e:
+        logger.error(f"Error in analyze_image: {e}")
+        raise
 
 def main():
     script = []
+    timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
 
     while True:
-        # path to your image
-        image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
+        try:
+            start_time = time.time()
+            image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
 
-        # getting the base64 encoding
-        base64_image = encode_image(image_path)
+            base64_image = encode_image(image_path)
+            timings['image_encoding'] += time.time() - start_time
 
-        # analyze posture
-        print("👀 VisGuide is watching...")
-        analysis = analyze_image(base64_image, script=script)
+            logger.info("👀 VisGuide is watching...")
+            analysis_start_time = time.time()
+            analysis = analyze_image(base64_image, script=script)
+            timings['analysis'] += time.time() - analysis_start_time
 
-        print("🎙️ VisGuide says:")
-        print(analysis)
+            logger.info("🎙️ VisGuide says:")
+            logger.info(analysis)
 
-        play_audio(analysis)
+            playback_start_time = time.time()
+            play_audio(analysis)
+            timings['audio_playback'] += time.time() - playback_start_time
 
-        script = script + [{"role": "assistant", "content": analysis}]
+            script = script + [{"role": "assistant", "content": analysis}]
 
-        # wait for 5 seconds
-        time.sleep(5)
+            time.sleep(5)
+        except Exception as e:
+            logger.error(f"An error occurred in main loop: {e}")
+            continue
 
+    # Report timings
+    for operation, time_taken in timings.items():
+        logger.info(f"{operation}: {time_taken:.2f} seconds")
 
 if __name__ == "__main__":
     main()
