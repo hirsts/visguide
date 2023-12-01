@@ -5,6 +5,8 @@ This is a solution to provide partially sighted and blind people with guidance a
 
 > Testing was performed using a Plantronics BT Headset which worked great. To add this it was easiest to use the Raspberry Pi desktop to add it like a normal consumer BT device. It now auto connects to both the mobile and VisGuide when you power it on. Future versions will work with other headsets and also allow the user to press the "talk" button and speak commands to VisGuide.
 
+> Costs on OpenAI and Elevenlabs need investigating. Also need to explore using our own AI services to manage costs, reduce latency and to preserve privacy. This could by Ollama models behind an API gateway or maybe using "themartian" for routing.
+
 ![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)
 
 # Setup
