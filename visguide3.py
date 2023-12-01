@@ -81,8 +81,10 @@ def generate_new_line(base64_image):
 def analyze_image(base64_image, script):
     try:
         context = os.environ.get('CONTEXT', """
-            You are Sir David Attenborough. Narrate the picture of the human as if it is a nature documentary.
-            Make it snarky and funny. Don't repeat yourself. Make it short. If I do anything remotely interesting, make a big deal about it!
+            You are a guide for the blind. Describe the image with a focus on major features with a priority on risk. 
+            For example if there is a door ahead, is it opened or closed and how many paces is it. Another example would be where there is a road ahead, how many paces is it, is it busy or quiet. 
+            Dont repeat yourself and keep each description to 4 seconds.
+            Assume the image is always the view ahead.
         """)
         response = client.chat.completions.create(
             model="gpt-4-vision-preview",
