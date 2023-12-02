@@ -35,6 +35,23 @@ else:
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
 
+# Define a function to check if the script is running on a Raspberry Pi
+def is_running_on_raspberry_pi():
+    try:
+        with open("/sys/firmware/devicetree/base/model", "r") as f:
+            if "Raspberry Pi" in f.read():
+                return True
+    except Exception:
+        return False
+
+# Conditional imports for Raspberry Pi specific modules
+if is_running_on_raspberry_pi():
+    import RPi.GPIO as GPIO
+    logger.info("Running on Raspberry Pi, GPIO module imported")
+else:
+    logger.info("Not running on Raspberry Pi, GPIO module not imported")
+
+
 # load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
         # If not set, check for .env file and load it
@@ -52,9 +69,11 @@ def button_callback(channel):
     # Implement the action to be taken when the button is pressed
 
 # Setup GPIO Pins
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
+if is_running_on_raspberry_pi():
+    # Setup GPIO Pins only if on Raspberry Pi
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
 
 
 ### Initialize the webcam
