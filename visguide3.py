@@ -110,28 +110,40 @@ def capture_image():
         # Convert the PIL image back to an OpenCV image
         frame = cv2.cvtColor(np.array(resized_img), cv2.COLOR_RGB2BGR)
 
-        # Save the frame as an image file
-        # print("📸 Say cheese! Saving frame.")
-        # path = f"{folder}/frame.jpg"
-        # cv2.imwrite(path, frame)
+        # Encode the image as base64
+        frame_jpg = cv2.imencode('.jpg', frame)[1]
+        frame = base64.b64encode(frame_jpg).decode("utf-8")
 
-        # Return the frame as base64
-        return base64.b64encode(frame).decode("utf-8")
+        # If debugging, save the frame as an image file
+        if args.debug:
+            # Create a folder to store the frames if it doesn't exist
+            folder = "frames"
+            if not os.path.exists(folder):
+                logger.debug("Creating folder to store frames")
+                os.makedirs(folder, exist_ok=True)
+            path = f"{folder}/frame.jpg"
+            logger.debug(f"Saving frame to {path}")
+            cv2.imwrite(path, frame_jpg)
+        # Delete the JPG version of the frame to save memory
+        del frame_jpg
+        # Return the base64 encoded image
+        return frame
     else:
         logger.warning("Failed to capture image")
 
-# Define a function to encode an image as base64
-# def encode_image(image_path):
-#     while True:
-#         try:
-#             with open(image_path, "rb") as image_file:
-#                 return base64.b64encode(image_file.read()).decode("utf-8")
-#         except IOError as e:
-#             if e.errno != errno.EACCES:
-#                 logger.error(f"IOError encountered: {e}")
-#                 raise
-#             logger.debug("Waiting for file to become accessible...")
-#             time.sleep(0.1)
+        
+        
+        # If debugging, save the frame as an image file
+        # if args.debug:
+            # Create a folder to store the frames if it doesn't exist
+            # folder = "frames"
+            # if not os.path.exists(folder):
+            #     logger.debug("Creating folder to store frames")
+            #     os.makedirs(folder, exist_ok=True)
+            # path = f"{folder}/frame.jpg"
+            # logger.debug(f"Saving frame to {path}")
+            # cv2.imwrite(path, frame)
+
 
 def play_audio(text):
     try:
