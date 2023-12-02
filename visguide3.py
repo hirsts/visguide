@@ -1,6 +1,6 @@
 import argparse
 import os
-import dotenv
+from dotenv import load_dotenv
 import RPi.GPIO as GPIO
 import cv2
 from PIL import Image
