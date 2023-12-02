@@ -1,5 +1,6 @@
 import argparse
 import os
+import RPi.GPIO as GPIO
 import cv2
 from PIL import Image
 import numpy as np
@@ -10,6 +11,7 @@ import errno
 import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import generate, play, set_api_key, voices
+
 
 # Get options from command line arguments
 parser = argparse.ArgumentParser()
@@ -31,6 +33,18 @@ else:
 
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
+
+
+### Setup the button
+def button_callback(channel):
+    logger.info("Button was pushed!")
+    # Implement the action to be taken when the button is pressed
+
+# Setup GPIO Pins
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
+
 
 ### Initialize the webcam
 cap = cv2.VideoCapture(0)
