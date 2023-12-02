@@ -166,6 +166,7 @@ def main():
             # This block will execute whether an exception occurred or not
             GPIO.cleanup()  # Clean up GPIO to ensure no resources are left open
             # Add any other cleanup code here if needed
+            exit(0)
 
     # Report timings
     for operation, time_taken in timings.items():
