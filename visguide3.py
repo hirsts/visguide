@@ -172,12 +172,7 @@ def main():
             continue
         except KeyboardInterrupt:
             logger.info("Script interrupted by user, exiting gracefully.")
-        # Add any cleanup code here
-        finally:
-            # This block will execute whether an exception occurred or not
-            GPIO.cleanup()  # Clean up GPIO to ensure no resources are left open
-            # Add any other cleanup code here if needed
-            logger.info("Exiting...")
+            GPIO.cleanup()
             exit(0)
 
     # Report timings
