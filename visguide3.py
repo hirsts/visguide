@@ -1,5 +1,6 @@
 import argparse
 import os
+from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
 from PIL import Image
@@ -12,11 +13,11 @@ import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import generate, play, set_api_key, voices
 
-
 # Get options from command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
+parser.add_argument("-s", "--syslog", action="store_true")
 args = parser.parse_args()
 
 # Set the logging level based on the verbose and debug options
@@ -33,6 +34,12 @@ else:
 
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
+
+# If the syslog option is present, send logs to the syslog server
+if args.syslog:
+    syslog_handler = SysLogHandler(address=('splunk.local', 8516))
+    logger.addHandler(syslog_handler)
+
 
 # Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
@@ -61,12 +68,6 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
         else:
             logger.warning('Required environment variables are not set and no .env file found')
 
-
-### Setup the button
-def button_callback(channel):
-    logger.info("Button was pushed!")
-    # Implement the action to be taken when the button is pressed
-
 # Setup GPIO Pins
 if is_running_on_raspberry_pi():
     # Setup GPIO Pins only if on Raspberry Pi
@@ -74,8 +75,7 @@ if is_running_on_raspberry_pi():
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
 
-
-### Initialize the webcam
+# Initialize the webcam
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
 if not cap.isOpened():
@@ -88,6 +88,11 @@ client = OpenAI()
 
 # Set the ElevenLabs API key 
 set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
+
+# Setup the button
+def button_callback(channel):
+    logger.info("Button was pushed!")
+    # Implement the action to be taken when the button is pressed
 
 # Define a function to encode an image as base64
 def encode_image(image_path):
@@ -104,20 +109,23 @@ def encode_image(image_path):
 
 def play_audio(text):
     try:
+        # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
         audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
 
-        unique_id = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8").rstrip("=")
-        dir_path = os.path.join("narration", unique_id)
-        os.makedirs(dir_path, exist_ok=True)
-        file_path = os.path.join(dir_path, "audio.wav")
+        # unique_id = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8").rstrip("=")
+        # dir_path = os.path.join("narration", unique_id)
+        # os.makedirs(dir_path, exist_ok=True)
+        # file_path = os.path.join(dir_path, "audio.wav")
 
-        with open(file_path, "wb") as f:
-            f.write(audio)
+        # with open(file_path, "wb") as f:
+        #    f.write(audio)
 
         play(audio)
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
 
+# FUNC: Generates the OpenAI "user" script
+# TODO: Explore if this an optimal prompt for each request.
 def generate_new_line(base64_image):
     return [
         {
@@ -132,6 +140,7 @@ def generate_new_line(base64_image):
         },
     ]
 
+# FUNC: Send image to OPENAI to get text summary back
 def analyze_image(base64_image, script):
     try:
         context = os.environ.get('CONTEXT', """
@@ -164,13 +173,17 @@ def main():
 
     while True:
         try:
+            # Start the timers
             start_time = time.time()
+
+            # Get the image
             image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
 
+            # Encode the image as base64
             base64_image = encode_image(image_path)
             timings['image_encoding'] += time.time() - start_time
 
-            logger.info("👀 VisGuide is watching...")
+            logger.info(" Sending image for narration ...")
             analysis_start_time = time.time()
             analysis = analyze_image(base64_image, script=script)
             timings['analysis'] += time.time() - analysis_start_time
@@ -191,6 +204,8 @@ def main():
         except KeyboardInterrupt:
             logger.info("Script interrupted by user, exiting gracefully.")
             GPIO.cleanup()
+            cap.release()
+            cv2.destroyAllWindows()
             exit(0)
 
     # Report timings
