@@ -99,4 +99,6 @@ Python logging is implemented and there are two command line options. If you add
 
 > Hallucination: Whilst testing is has become apparent that there is fundamental hallucination happening as it described me as wearing glasses but I'm not! I need to explore prompts that prevent such fundamental hallucination. What if it hallucinates and says that its safe to cross the road and it isn't....
 
+> MAC vs RPi: I need to explore how to get the script to ignore errors and issues relating to RPi when running on a MAC.
+
 ![Picture of VisGuide and Headset](https://github.com/hirsts/visguide/blob/main/image.jpeg?raw=true)
