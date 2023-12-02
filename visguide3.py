@@ -57,7 +57,6 @@ if is_running_on_raspberry_pi():
 else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
 
-
 # load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
         # If not set, check for .env file and load it
@@ -79,7 +78,9 @@ if is_running_on_raspberry_pi():
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
 if not cap.isOpened():
+    logger.warning("Failed to open webcam")
     raise IOError("Cannot open webcam")
+    exit(1)
 # Wait for the camera to initialize and adjust light levels
 time.sleep(2)
 
@@ -94,18 +95,43 @@ def button_callback(channel):
     logger.info("Button was pushed!")
     # Implement the action to be taken when the button is pressed
 
+def capture_image():
+    ret, frame = cap.read()
+    if ret:
+        # Convert the frame to a PIL image
+        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        # Resize the image
+        max_size = 250
+        ratio = max_size / max(pil_img.size)
+        new_size = tuple([int(x*ratio) for x in pil_img.size])
+        resized_img = pil_img.resize(new_size, Image.LANCZOS)
+
+        # Convert the PIL image back to an OpenCV image
+        frame = cv2.cvtColor(np.array(resized_img), cv2.COLOR_RGB2BGR)
+
+        # Save the frame as an image file
+        # print("📸 Say cheese! Saving frame.")
+        # path = f"{folder}/frame.jpg"
+        # cv2.imwrite(path, frame)
+
+        # Return the frame as base64
+        return base64.b64encode(frame).decode("utf-8")
+    else:
+        logger.warning("Failed to capture image")
+
 # Define a function to encode an image as base64
-def encode_image(image_path):
-    while True:
-        try:
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-        except IOError as e:
-            if e.errno != errno.EACCES:
-                logger.error(f"IOError encountered: {e}")
-                raise
-            logger.debug("Waiting for file to become accessible...")
-            time.sleep(0.1)
+# def encode_image(image_path):
+#     while True:
+#         try:
+#             with open(image_path, "rb") as image_file:
+#                 return base64.b64encode(image_file.read()).decode("utf-8")
+#         except IOError as e:
+#             if e.errno != errno.EACCES:
+#                 logger.error(f"IOError encountered: {e}")
+#                 raise
+#             logger.debug("Waiting for file to become accessible...")
+#             time.sleep(0.1)
 
 def play_audio(text):
     try:
@@ -177,11 +203,14 @@ def main():
             start_time = time.time()
 
             # Get the image
-            image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
+            # image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
 
             # Encode the image as base64
-            base64_image = encode_image(image_path)
-            timings['image_encoding'] += time.time() - start_time
+            # base64_image = encode_image(image_path)
+            # timings['image_encoding'] += time.time() - start_time
+
+            # Capture the image
+            base64_image = capture_image()
 
             logger.info(" Sending image for narration ...")
             analysis_start_time = time.time()
