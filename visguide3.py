@@ -159,6 +159,13 @@ def main():
         except Exception as e:
             logger.error(f"An error occurred in main loop: {e}")
             continue
+        except KeyboardInterrupt:
+            logger.info("Script interrupted by user, exiting gracefully.")
+        # Add any cleanup code here
+        finally:
+            # This block will execute whether an exception occurred or not
+            GPIO.cleanup()  # Clean up GPIO to ensure no resources are left open
+            # Add any other cleanup code here if needed
 
     # Report timings
     for operation, time_taken in timings.items():
