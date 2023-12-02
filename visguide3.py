@@ -67,6 +67,11 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
         else:
             logger.warning('Required environment variables are not set and no .env file found')
 
+# Setup the button
+def button_callback(channel):
+    logger.info("Button was pushed!")
+    # Implement the action to be taken when the button is pressed
+
 # Setup GPIO Pins
 if is_running_on_raspberry_pi():
     # Setup GPIO Pins only if on Raspberry Pi
@@ -90,10 +95,7 @@ client = OpenAI()
 # Set the ElevenLabs API key 
 set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
-# Setup the button
-def button_callback(channel):
-    logger.info("Button was pushed!")
-    # Implement the action to be taken when the button is pressed
+
 
 def capture_image():
     ret, frame = cap.read()
