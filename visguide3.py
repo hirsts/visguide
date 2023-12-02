@@ -131,19 +131,6 @@ def capture_image():
     else:
         logger.warning("Failed to capture image")
 
-        
-        
-        # If debugging, save the frame as an image file
-        # if args.debug:
-            # Create a folder to store the frames if it doesn't exist
-            # folder = "frames"
-            # if not os.path.exists(folder):
-            #     logger.debug("Creating folder to store frames")
-            #     os.makedirs(folder, exist_ok=True)
-            # path = f"{folder}/frame.jpg"
-            # logger.debug(f"Saving frame to {path}")
-            # cv2.imwrite(path, frame)
-
 
 def play_audio(text):
     try:
@@ -213,13 +200,6 @@ def main():
         try:
             # Start the timers
             start_time = time.time()
-
-            # Get the image
-            # image_path = os.path.join(os.getcwd(), "./frames/frame.jpg")
-
-            # Encode the image as base64
-            # base64_image = encode_image(image_path)
-            # timings['image_encoding'] += time.time() - start_time
 
             # Capture the image
             base64_image = capture_image()
