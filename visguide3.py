@@ -1,5 +1,6 @@
 import argparse
 import os
+from dotenv import load_dotenv
 import RPi.GPIO as GPIO
 import cv2
 from PIL import Image
@@ -33,6 +34,16 @@ else:
 
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
+
+# load the environment variables from the .env file if they are not set
+if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
+        # If not set, check for .env file and load it
+        dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+        if os.path.exists(dotenv_path):
+            load_dotenv(dotenv_path)
+            logger.info('.env file found and loaded')
+        else:
+            logger.warning('Required environment variables are not set and no .env file found')
 
 
 ### Setup the button
