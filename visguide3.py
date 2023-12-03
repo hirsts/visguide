@@ -194,6 +194,10 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
+# Play audio to indicate that VisGuide app is ready
+play_audio("VisGuide is ready")
+
+
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
