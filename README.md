@@ -80,10 +80,19 @@ To use either your own, or one of the example prompts, use:\
 ```bash
 export CONTEXT="<prompt>"
 ```
-### Run the main process
+# Run the main process
 ```bash
 python visguide.py
 ```
+## Button & Modes
+The button provides for different modes and actions. Green indicates that the feature is working and RED is not yet implemented:
+- <span style="color:red">Pressed whilst booting enables debugging and logging
+- <span style="color:red">Long press toggles modes single shot and continuous
+- <span style="color:red">Single press interrupts any running process and forces an immediate single shot and narration whether in Single or Continuous mode
+- <span style="color:red">Double press works the same as single press however the narration is flamboyant and helps to paint a sight seeing picture for the user.
+- <span style="color:red">Triple press toggles between functional & flamboyant
+
+
 ### Logging & Debug
 Python logging is implemented and there are two command line options. If you add "-v" to the command line then INFO level logging is applied with millisecond timing. the second option is "-d" or "--debug" with enables detailed debug logging.\
 > **_NOTE_**: Logging is currently to console only as dont want to slow down the end the end process with writing to disk, or in the case of the RPi Zero, the SD card which is slow.
