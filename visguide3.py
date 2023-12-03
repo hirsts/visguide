@@ -194,10 +194,6 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
-# Play audio to indicate that VisGuide app is ready
-play_audio("VisGuide is ready")
-
-
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
@@ -238,6 +234,14 @@ def main():
     # Report timings
     for operation, time_taken in timings.items():
         logger.info(f"{operation}: {time_taken:.2f} seconds")
+
+
+# Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
+# load the mp3 audio file
+
+wave_obj = sa.WaveObject.from_wave_file("./assets/wav/visguide_is_ready.wav")
+# play the audio file
+play_obj = wave_obj.play()
 
 if __name__ == "__main__":
     main()
