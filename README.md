@@ -19,8 +19,6 @@ sudo nano /etc/dphys-swapfile
 sudo raspi-config --expand-rootfs
 sudo reboot
 ```
-
-
 ### Update the system and install fundamental packages
 Some of these packages might not be needed as they are used for compiling and building but its ok to have them for now.
 ```bash
@@ -37,19 +35,6 @@ cd visguide
 virtualenv visguide-env
 source visguide-env/bin/activate
 python -m pip install -r requirements.txt
-```
-
-### Start capturing frames ready for processing
-This will start capturing the image from the camera and overwrite the frame/frame.jpg image each time. The image size is small to try and minimise traffic and latency.
-```bash 
-python capture.py
-```
-
-### Setup the main VisGuide process
-open new terminal session and activate the python environment
-```bash
-cd visguide
-source visguide-env/bin/activate
 ```
 ### Elevenlabs
 
