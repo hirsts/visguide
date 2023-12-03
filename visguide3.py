@@ -291,7 +291,7 @@ while not check_internet(timeout=60, max_response_time=30):
 
 # Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
 # load the mp3 audio file
-wave_obj = sa.WaveObject.from_wave_file("./assets/wav/visguide_is_ready.wav")
+wave_obj = sa.WaveObject.from_wave_file("./assets/wav/VisGuide_is_ready.wav")
 # play the audio file
 play_obj = wave_obj.play()
 
