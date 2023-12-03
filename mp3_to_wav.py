@@ -22,3 +22,5 @@ for filename in os.listdir(source_directory):
         sound = AudioSegment.from_mp3(mp3_path)
         sound.export(wav_path, format="wav")
         print(f"Converted {filename} to WAV and saved in {destination_directory}")
+        # delete the mp3 file
+        os.remove(mp3_path)

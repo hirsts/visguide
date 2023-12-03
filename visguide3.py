@@ -7,6 +7,7 @@ from PIL import Image
 import numpy as np
 import base64
 import time
+import subprocess
 import logging
 import errno
 import simpleaudio as sa
@@ -95,6 +96,45 @@ client = OpenAI()
 # Set the ElevenLabs API key 
 set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
+def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 seconds, and default max_response_time is 30ms
+    hostname = "8.8.8.8"
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        # Use subprocess to get the ping statistics
+        try:
+            ping_response = subprocess.check_output(
+                ["ping", "-c", "1", hostname],
+                stderr=subprocess.STDOUT,  # Redirect stderr to stdout
+                universal_newlines=True
+            )
+
+            # Extract the time from the ping response
+            ping_time = float(ping_response.split("time=")[1].split(" ms")[0])
+            if ping_time <= max_response_time:
+                logger.info(f"Internet connection detected with ping time: {ping_time} ms")
+                return True
+            else:
+                logger.warning(f"Slow internet response time: {ping_time} ms")
+                
+                # Play the user warning audio file
+                wave_obj = sa.WaveObject.from_wave_file("./assets/wav/slow_internet.wav")
+                play_obj = wave_obj.play()
+                play_obj.wait_done()
+                return True
+        except subprocess.CalledProcessError:
+            # This block is executed if the ping command fails
+            logger.warning("Ping command failed")
+
+        # Sleep for a short duration before retrying
+        time.sleep(1)
+
+    logger.warning("No internet connection detected within the given time frame")
+    # Play the user warning audio file
+    wave_obj = sa.WaveObject.from_wave_file("./assets/wav/No_internet.wav")
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
+    return False
 
 
 def capture_image():
@@ -236,9 +276,14 @@ def main():
         logger.info(f"{operation}: {time_taken:.2f} seconds")
 
 
+    
+# Check for internet connectivity by pinging Google DNS
+while not check_internet(timeout=60, max_response_time=30):
+    logger.info("Waiting for internet connection...")
+    time.sleep(1)
+
 # Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
 # load the mp3 audio file
-
 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/visguide_is_ready.wav")
 # play the audio file
 play_obj = wave_obj.play()
