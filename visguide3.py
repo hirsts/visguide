@@ -1,6 +1,5 @@
 import argparse
 import os
-import asyncio
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -175,52 +174,29 @@ def capture_image():
         logger.warning("Failed to capture image")
 
 
-async def play_audio(text):
+def play_audio(text):
     try:
-        first_sentence, *the_remainder = text.split(".", 1)  # Split on the first period
-        logger.debug("First sentence: %s", first_sentence)
-        the_remainder = ".".join(the_remainder)  # Join the remainder back into a string
-        logger.debug("The remainder: %s", the_remainder)
+        # Split the text into the first sentence and the rest of the text
+        first_sentence, *rest = text.split(".")  # Split on the first period
+        
+        # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
+        audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
 
-        # Call the async function to process and play the audio
-        logger.debug("Calling process_and_play")
-        await process_and_play(first_sentence, the_remainder)
+        # If the debug option is set, save the audio to a file
+        if args.debug:
+            # Create a folder to store the audio if it doesn't exist
+            folder = "narration"
+            if not os.path.exists(folder):
+                logger.debug("Creating folder to store audio")
+                os.makedirs(folder, exist_ok=True)
+            path = f"{folder}/audio.wav"
+            logger.debug(f"Saving audio to {path}")
+            with open(path, 'wb') as f:
+                f.write(audio)
+
+        play(audio)
     except Exception as e:
-        # Truncate the error message to 100 characters
-        e = e[:100] + (e[100:] and '...')
-        logger.error("Error in play_audio: %s", e)
-
-async def process_and_play(first_sentence, the_remainder):
-    voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
-    logging.debug("The process_and_play func got Voice ID from the OS environment: %s", voice_id)
-
-    # Create asynchronous tasks for generating audio
-    logging.debug("Creating the first_audio_task audio tasks")
-    first_audio_task = asyncio.create_task(generate(first_sentence, voice=voice_id))
-    logging.debug("First audio task created")
-    logging.debug("Creating the second_audio_task audio tasks")
-    second_audio_task = asyncio.create_task(generate(the_remainder, voice=voice_id))
-    logging.debug("Second audio task created")
-    
-    # Wait for the first audio to be generated and then play it
-    logging.debug("Waiting for the first audio to be generated")
-    first_audio = await first_audio_task
-    logging.debug("First audio generated")
-    logging.debug("Calling play for first_audio")
-    await play(first_audio)
-
-    # Wait for the second audio to be generated and then play it
-    # This will happen in the background while the first audio is playing
-    logging.debug("Waiting for the second audio to be generated")
-    second_audio = await second_audio_task
-    logging.debug("Second audio generated")
-    logging.debug("Calling play for second_audio")
-    await play(second_audio)
-    logging.debug("Second audio played")
-    logging.debug("Exiting process_and_play")
-    exit(0)
-
-
+        logger.error(f"Error in play_audio: {e}")
 
 # FUNC: Generates the OpenAI "user" script
 # TODO: Explore if this an optimal prompt for each request.
@@ -280,23 +256,13 @@ def main():
             logger.info(" Sending image for narration ...")
             analysis_start_time = time.time()
             analysis = analyze_image(base64_image, script=script)
-            # Create a version of the analysis variable for logging and truncate the image_url field to 100 characters
-            analysis_for_logging = analysis.replace("data:image/jpeg;base64,", "data:image/jpeg;base64, ...")
-
-
-
             timings['analysis'] += time.time() - analysis_start_time
 
             logger.info("🎙️ VisGuide says:")
-            logger.info(analysis_for_logging)
+            logger.info(analysis)
 
             playback_start_time = time.time()
-
-            # asyncio.run(play_audio(analysis))
-            
-            # Call the async function to play the audio
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(play_audio(analysis))
+            play_audio(analysis)
             timings['audio_playback'] += time.time() - playback_start_time
 
             script = script + [{"role": "assistant", "content": analysis}]
@@ -310,7 +276,6 @@ def main():
             GPIO.cleanup()
             cap.release()
             cv2.destroyAllWindows()
-            loop.close()
             exit(0)
 
     # Report timings
