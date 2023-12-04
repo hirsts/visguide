@@ -1,5 +1,6 @@
 import argparse
 import os
+import threading
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -11,6 +12,7 @@ import subprocess
 import logging
 import errno
 import simpleaudio as sa
+import keyboard
 from openai import OpenAI
 from elevenlabs import generate, set_api_key, stream
 
@@ -72,6 +74,18 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
 def button_callback(channel):
     logger.info("Button was pushed!")
     # Implement the action to be taken when the button is pressed
+
+# Setup the key press event handler
+def key_press_callback():
+    # e.name will contain the name of the key pressed
+    logger.info("Space key was pressed")
+    # Implement the action to be taken when the key is pressed
+
+def listen_for_key():
+    # Using wait method in a loop
+    while True:
+        keyboard.wait('space')  # Change 'space' to the key you want to listen for
+        key_press_callback()
 
 # Setup GPIO Pins
 if is_running_on_raspberry_pi():
@@ -229,6 +243,10 @@ def analyze_image(base64_image, script):
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
+    # Set up keyboard event listener
+    listener_thread = threading.Thread(target=listen_for_key)
+    listener_thread.daemon = True  # This makes the thread exit when the main program exits
+    listener_thread.start()
 
     while True:
         try:
