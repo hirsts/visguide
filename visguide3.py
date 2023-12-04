@@ -1,6 +1,7 @@
 import argparse
 import os
 import threading
+from threading import Lock
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -80,6 +81,35 @@ LONG_PRESS_MIN = 1.5  # Min duration for a long press (seconds)
 # Global variables to track press patterns
 last_press_time = 0
 press_count = 0
+press_start_time = 0
+press_lock = Lock()  # Thread lock for synchronizing access to global variables
+
+
+# Key press event handler
+def keyboard_event(event):
+    if event.event_type == keyboard.KEY_DOWN:
+        on_key_press(event)
+    elif event.event_type == keyboard.KEY_UP:
+        on_key_release(event)
+
+# Key press event handler
+def on_key_press(event):
+    global press_start_time
+    if event.name == 'space':  # Replace 'space' with your desired key
+        with press_lock:
+            press_start_time = time.time()
+
+# Key release event handler
+def on_key_release(event):
+    global press_start_time, press_count
+    if event.name == 'space':  # Replace 'space' with your desired key
+        with press_lock:
+            press_duration = time.time() - press_start_time
+            if press_duration >= LONG_PRESS_MIN:
+                handle_long_press()
+            else:
+                press_count += 1
+                threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
 
 # Example of distinguishing between press and release
 def button_pressed(channel):
@@ -100,39 +130,21 @@ def button_released(channel):
         press_count += 1
         threading.Timer(SINGLE_PRESS_MAX, check_press_count).start()
 
-def check_press_count():
+def check_press_count(press_duration):
     global press_count
-    if press_count == 1:
-        handle_single_press()
-    elif press_count == 2:
-        handle_double_press()
-    elif press_count == 3:
-        handle_triple_press()
-    press_count = 0
+    with press_lock:
+        if press_count == 1:
+            handle_single_press(press_duration)
+        elif press_count == 2:
+            handle_double_press()
+        elif press_count == 3:
+            handle_triple_press()
+        press_count = 0
 
-# Key press event handler
-def keyboard_event(event):
-    if event.event_type == keyboard.KEY_DOWN:
-        on_key_press(event)
-    elif event.event_type == keyboard.KEY_UP:
-        on_key_release(event)
-
-# Key press event handler
-def on_key_press(event):
-    logger.debug(f"{event.name} was pressed")
-    if event.name == 'space':  # Replace 'space' with your desired key
-        button_pressed("space")
-
-# Key release event handler
-def on_key_release(event):
-    logger.debug(f"{event.name} was released")
-    if event.name == 'space':  # Replace 'space' with your desired key
-        button_released("space")
 
 # Handlers for different press types
-def handle_single_press(press_time):
-    global press_count
-    if time.time() - press_time < SINGLE_PRESS_MAX and press_count == 1:
+def handle_single_press(press_duration):
+    if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
         # Implement single press action
 
@@ -154,8 +166,6 @@ def handle_long_press():
     logger.info("Long Press Detected")
     # Implement long press action
 
-# ... [rest of your code]
-
 # Update the GPIO setup
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
@@ -163,7 +173,6 @@ if is_running_on_raspberry_pi():
     GPIO.add_event_detect(17, GPIO.RISING, callback=button_pressed)
     GPIO.add_event_detect(17, GPIO.FALLING, callback=button_released)
 
-# ... [rest of your code]
 
 # Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
