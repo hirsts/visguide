@@ -70,30 +70,132 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
         else:
             logger.warning('Required environment variables are not set and no .env file found')
 
-# Setup the button
-def button_callback(channel):
-    logger.info("Button was pushed!")
-    # Implement the action to be taken when the button is pressed
 
-# Setup the key press event handler
-def key_press_callback():
-    # e.name will contain the name of the key pressed
-    logger.info("Space key was pressed")
-    # Implement the action to be taken when the key is pressed
+# Constants for press detection
+SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
+DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
+TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
+LONG_PRESS_MIN = 1.5  # Min duration for a long press (seconds)
 
-def listen_for_key():
-    # Using wait method in a loop
-    while True:
-        keyboard.wait('space')  # Change 'space' to the key you want to listen for
-        # key_press_callback()
-        button_callback(17)
+# Global variables to track press patterns
+last_press_time = 0
+press_count = 0
 
-# Setup GPIO Pins
+# Example of distinguishing between press and release
+def button_pressed(channel):
+    logger.debug("Button was pressed!")
+    global press_start_time
+    press_start_time = time.time()
+    logger.debug(f"Press start time: {press_start_time}")
+    
+def button_released(channel):
+    logger.debug("Button was released!")
+    global press_start_time, press_count
+    press_duration = time.time() - press_start_time
+    logger.debug(f"Press duration: {press_duration}")
+
+    if press_duration >= LONG_PRESS_MIN:
+        handle_long_press()
+    else:
+        press_count += 1
+        threading.Timer(SINGLE_PRESS_MAX, check_press_count).start()
+
+def check_press_count():
+    global press_count
+    if press_count == 1:
+        handle_single_press()
+    elif press_count == 2:
+        handle_double_press()
+    elif press_count == 3:
+        handle_triple_press()
+    press_count = 0
+
+# Key press event handler
+def on_key_press(event):
+    logger.debug(f"{event.name} was pressed")
+    if event.name == 'space':  # Replace 'space' with your desired key
+        button_pressed("space")
+
+# Key release event handler
+def on_key_release(event):
+    logger.debug(f"{event.name} was released")
+    if event.name == 'space':  # Replace 'space' with your desired key
+        button_released("space")
+
+# Handlers for different press types
+def handle_single_press(press_time):
+    global press_count
+    if time.time() - press_time < SINGLE_PRESS_MAX and press_count == 1:
+        logger.info("Single Press Detected")
+        # Implement single press action
+
+def handle_double_press():
+    global press_count
+    press_count = 0
+    logger.info("Double Press Detected")
+    # Implement double press action
+
+def handle_triple_press():
+    global press_count
+    press_count = 0
+    logger.info("Triple Press Detected")
+    # Implement triple press action
+
+def handle_long_press():
+    global press_count
+    press_count = 0
+    logger.info("Long Press Detected")
+    # Implement long press action
+
+# ... [rest of your code]
+
+# Update the GPIO setup
 if is_running_on_raspberry_pi():
-    # Setup GPIO Pins only if on Raspberry Pi
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
+    GPIO.add_event_detect(17, GPIO.RISING, callback=button_pressed)
+    GPIO.add_event_detect(17, GPIO.FALLING, callback=button_released)
+
+# ... [rest of your code]
+
+# Update listen_for_key function to call button_callback on key press and release
+def listen_for_key():
+    # Add hooks for key press and release
+    keyboard.on_press(on_key_press)
+    keyboard.on_release(on_key_release)
+
+    # Loop to keep the thread alive
+    while True:
+        # This loop will keep running in the background
+        # You can implement any conditions to break out of the loop if needed
+        keyboard.wait()  # This will wait for any key press
+
+############################################################################################################
+
+# # Setup the button
+# def button_callback(channel):
+#     logger.info("Button was pushed!")
+#     # Implement the action to be taken when the button is pressed
+
+# # Setup the key press event handler
+# def key_press_callback():
+#     # e.name will contain the name of the key pressed
+#     logger.info("Space key was pressed")
+#     # Implement the action to be taken when the key is pressed
+
+# def listen_for_key():
+#     # Using wait method in a loop
+#     while True:
+#         keyboard.wait('space')  # Change 'space' to the key you want to listen for
+#         # key_press_callback()
+#         button_callback(17)
+
+# # Setup GPIO Pins
+# if is_running_on_raspberry_pi():
+#     # Setup GPIO Pins only if on Raspberry Pi
+#     GPIO.setmode(GPIO.BCM)
+#     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#     GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
 
 # Initialize the webcam
 cap = cv2.VideoCapture(0)
@@ -245,8 +347,7 @@ def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
     # Set up keyboard event listener
-    listener_thread = threading.Thread(target=listen_for_key)
-    listener_thread.daemon = True  # This makes the thread exit when the main program exits
+    listener_thread = threading.Thread(target=listen_for_key, daemon=True) # This makes the thread exit when the main program exits
     listener_thread.start()
 
     while True:
@@ -295,6 +396,7 @@ while not check_internet(timeout=60, max_response_time=30):
     logger.info("Waiting for internet connection...")
     time.sleep(1)
 
+# Visguide is ready
 # Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
 # load the mp3 audio file
 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/VisGuide_is_ready.wav")
