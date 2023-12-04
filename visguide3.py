@@ -85,7 +85,8 @@ def listen_for_key():
     # Using wait method in a loop
     while True:
         keyboard.wait('space')  # Change 'space' to the key you want to listen for
-        key_press_callback()
+        # key_press_callback()
+        button_callback(17)
 
 # Setup GPIO Pins
 if is_running_on_raspberry_pi():
