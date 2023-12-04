@@ -175,39 +175,13 @@ def capture_image():
 
 def play_audio(text):
     try:
-        
-        # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
+        # Calls the ElevenLabs API to generate an audio stream
         audio_stream = generate(text, stream=True, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-
+        # Uses the ElevenLabs stream function to play the audio stream
         stream(audio_stream)
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
 
-
-
-# def play_audio(text):
-#     try:
-#         # Split the text into the first sentence and the rest of the text
-#         first_sentence, *rest = text.split(".")  # Split on the first period
-        
-#         # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
-#         audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-
-#         # If the debug option is set, save the audio to a file
-#         if args.debug:
-#             # Create a folder to store the audio if it doesn't exist
-#             folder = "narration"
-#             if not os.path.exists(folder):
-#                 logger.debug("Creating folder to store audio")
-#                 os.makedirs(folder, exist_ok=True)
-#             path = f"{folder}/audio.wav"
-#             logger.debug(f"Saving audio to {path}")
-#             with open(path, 'wb') as f:
-#                 f.write(audio)
-
-#         play(audio)
-#     except Exception as e:
-#         logger.error(f"Error in play_audio: {e}")
 
 # FUNC: Generates the OpenAI "user" script
 # TODO: Explore if this an optimal prompt for each request.
