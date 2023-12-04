@@ -21,8 +21,6 @@ parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-s", "--syslog", action="store_true")
 args = parser.parse_args()
 
-hardware=""
-
 # Set the logging level based on the verbose and debug options
 if args.verbose:
     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
@@ -56,7 +54,6 @@ def is_running_on_raspberry_pi():
 # Conditional imports for Raspberry Pi specific modules
 if is_running_on_raspberry_pi():
     import RPi.GPIO as GPIO
-    hardware="rpi"
     logger.info("Running on Raspberry Pi, GPIO module imported")
 else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
@@ -181,19 +178,9 @@ def play_audio(text):
     try:
         # Split the text into the first sentence and the rest of the text
         first_sentence, *rest = text.split(".")  # Split on the first period
-        # Add the period back to the first sentence
-        first_sentence += "."
         
         # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
-        first_audio = generate(first_sentence, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-        
-        # Play the first audio
-        play(first_audio)  # Wait for the first audio to finish playing
-        
-        # Play the rest of the audio
-        rest_audio = generate(".".join(rest), voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-        play(rest_audio)
-
+        audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
 
         # If the debug option is set, save the audio to a file
         if args.debug:
@@ -286,8 +273,7 @@ def main():
             continue
         except KeyboardInterrupt:
             logger.info("Script interrupted by user, exiting gracefully.")
-            if hardware=="rpi":
-                GPIO.cleanup()
+            GPIO.cleanup()
             cap.release()
             cv2.destroyAllWindows()
             exit(0)
