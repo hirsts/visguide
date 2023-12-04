@@ -83,13 +83,13 @@ press_count = 0
 
 # Example of distinguishing between press and release
 def button_pressed(channel):
-    logger.debug("Button was pressed!")
+    logger.debug(f"{channel} Button was pressed!")
     global press_start_time
     press_start_time = time.time()
     logger.debug(f"Press start time: {press_start_time}")
     
 def button_released(channel):
-    logger.debug("Button was released!")
+    logger.debug(f"{channel} Button was released!")
     global press_start_time, press_count
     press_duration = time.time() - press_start_time
     logger.debug(f"Press duration: {press_duration}")
@@ -109,6 +109,13 @@ def check_press_count():
     elif press_count == 3:
         handle_triple_press()
     press_count = 0
+
+# Key press event handler
+def keyboard_event(event):
+    if event.event_type == keyboard.KEY_DOWN:
+        on_key_press(event)
+    elif event.event_type == keyboard.KEY_UP:
+        on_key_release(event)
 
 # Key press event handler
 def on_key_press(event):
@@ -161,14 +168,11 @@ if is_running_on_raspberry_pi():
 # Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
     # Add hooks for key press and release
-    keyboard.on_press(on_key_press)
-    keyboard.on_release(on_key_release)
+    keyboard.hook(keyboard_event)
 
     # Loop to keep the thread alive
     while True:
-        # This loop will keep running in the background
-        # You can implement any conditions to break out of the loop if needed
-        keyboard.wait()  # This will wait for any key press
+        time.sleep(1)
 
 ############################################################################################################
 

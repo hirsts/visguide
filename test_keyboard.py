@@ -1,9 +1,21 @@
 import keyboard
 
-def test_callback(e):
-    print("Space key was pressed!")
+# Replace this with the actual scan code for 'b'
+B_KEY_CODE = YOUR_KEY_CODE
 
-keyboard.on_press_key('space', test_callback)
+def on_key_press(key):
+    if key.scan_code == B_KEY_CODE:
+        print("B key pressed")
 
-print("Listening for space key...")
-keyboard.wait('esc')  # Wait for 'esc' key to exit
+def on_key_release(key):
+    if key.scan_code == B_KEY_CODE:
+        print("B key released")
+
+keyboard.on_press(on_key_press)
+keyboard.on_release(on_key_release)
+
+print("Press and release the 'b' key (using key code) to test. Press CTRL+C to exit.")
+
+# Infinite loop to keep the program running
+while True:
+    pass
