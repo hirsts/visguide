@@ -92,15 +92,15 @@ def keyboard_event(event):
         if event.name == 'space':
             #logger.debug(f"Keyboard event detected: {event.event_type}")
             #logger.debug(f"keyboard_event - calling on_key_press")
-            on_key_press(event)
+            on_key_press()
 
     elif event.event_type == keyboard.KEY_UP:
         # Only handle key up events for the space key
         if event.name == 'space':
-            on_key_release(event)
+            on_key_release()
 
 # Key press event handler
-def on_key_press(event):
+def on_key_press():
     global press_start_time, button_state
     if button_state==False:
         with press_lock:
@@ -109,7 +109,7 @@ def on_key_press(event):
             #logger.debug(f"on_key_press - Press start time: {press_start_time}")
 
 # Key release event handler
-def on_key_release(event):
+def on_key_release():
     global press_start_time, press_count, button_state
     #logger.debug(f"event.name = {event.name} was released!!!!!!")
 
@@ -187,11 +187,11 @@ def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
     logger.debug(f"State of : {GPIO-input(channel)}")
     # Implement the action to be taken when the button is pressed
-    on_key_press(channel)
+    on_key_press()
     # Wait for GPIO button to be released by checking the state of the button
     while GPIO.input(channel) == 1:
         pass
-    on_key_release(channel)
+    on_key_release()
 
 # Update the GPIO setup
 if is_running_on_raspberry_pi():
