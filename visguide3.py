@@ -197,7 +197,7 @@ def GPIO_press(channel):
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.RISING, callback=GPIO_press(channel=17))
+    GPIO.add_event_detect(17, GPIO.RISING, callback=GPIO_press, bouncetime=200)
 
 
 
