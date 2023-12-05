@@ -88,7 +88,7 @@ button_state = False
 # Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
-        Only handle key down events for the space key
+        # Only handle key down events for the space key
         if event.name == 'space':
             #logger.debug(f"Keyboard event detected: {event.event_type}")
             #logger.debug(f"keyboard_event - calling on_key_press")
