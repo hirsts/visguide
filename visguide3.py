@@ -85,7 +85,7 @@ press_start_time = 0
 press_lock = Lock()  # Thread lock for synchronizing access to global variables
 button_state = False
 
-# Key press event handler
+# Space Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
         # Only handle key down events for the space key
@@ -125,25 +125,6 @@ def on_key_release():
                 press_count += 1
                 threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
 
-# This might be needed for the GPIO button press and so keeping for now
-# Key press process is working on Mac keyboard
-# def button_pressed(channel):
-#     logger.debug(f"{channel} Button was pressed!")
-#     global press_start_time
-#     press_start_time = time.time()
-#     logger.debug(f"Press start time: {press_start_time}")
-    
-# def button_released(channel):
-#     logger.debug(f"{channel} Button was released!")
-#     global press_start_time, press_count
-#     press_duration = time.time() - press_start_time
-#     logger.debug(f"Press duration: {press_duration}")
-
-#     if press_duration >= LONG_PRESS_MIN:
-#         handle_long_press()
-#     else:
-#         press_count += 1
-#         threading.Timer(SINGLE_PRESS_MAX, check_press_count).start()
 
 def check_press_count(press_duration):
     global press_count
@@ -182,7 +163,7 @@ def handle_long_press():
     # Implement long press action
 
 
-
+# GPIO event handler
 def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
     logger.debug(f"State of : {GPIO.input(channel)}")
@@ -207,33 +188,6 @@ def listen_for_key():
     # Loop to keep the thread alive
     while True:
         time.sleep(1)
-
-############################################################################################################
-
-# # Setup the button
-# def button_callback(channel):
-#     logger.info("Button was pushed!")
-#     # Implement the action to be taken when the button is pressed
-
-# # Setup the key press event handler
-# def key_press_callback():
-#     # e.name will contain the name of the key pressed
-#     logger.info("Space key was pressed")
-#     # Implement the action to be taken when the key is pressed
-
-# def listen_for_key():
-#     # Using wait method in a loop
-#     while True:
-#         keyboard.wait('space')  # Change 'space' to the key you want to listen for
-#         # key_press_callback()
-#         button_callback(17)
-
-# # Setup GPIO Pins
-# if is_running_on_raspberry_pi():
-#     # Setup GPIO Pins only if on Raspberry Pi
-#     GPIO.setmode(GPIO.BCM)
-#     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-#     GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
 
 # Initialize the webcam
 cap = cv2.VideoCapture(0)
@@ -381,6 +335,7 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
+# Main loop
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
