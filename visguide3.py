@@ -83,43 +83,47 @@ last_press_time = 0
 press_count = 0
 press_start_time = 0
 press_lock = Lock()  # Thread lock for synchronizing access to global variables
-space_state = False
+button_state = False
 
 # Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
-        #logger.debug(f"Keyboard event detected: {event.event_type}")
-        #logger.debug(f"keyboard_event - calling on_key_press")
-        on_key_press(event)
+        Only handle key down events for the space key
+        if event.name == 'space':
+            #logger.debug(f"Keyboard event detected: {event.event_type}")
+            #logger.debug(f"keyboard_event - calling on_key_press")
+            on_key_press(event)
+
     elif event.event_type == keyboard.KEY_UP:
-        on_key_release(event)
+        # Only handle key up events for the space key
+        if event.name == 'space':
+            on_key_release(event)
 
 # Key press event handler
 def on_key_press(event):
-    global press_start_time, space_state
-    if event.name == 'space':  # Replace 'space' with your desired key
-        if space_state==False:
-            with press_lock:
-                press_start_time = time.time()
-                space_state = True
-                #logger.debug(f"on_key_press - Press start time: {press_start_time}")
+    global press_start_time, button_state
+    if button_state==False:
+        with press_lock:
+            press_start_time = time.time()
+            button_state = True
+            #logger.debug(f"on_key_press - Press start time: {press_start_time}")
 
 # Key release event handler
 def on_key_release(event):
-    global press_start_time, press_count, space_state
+    global press_start_time, press_count, button_state
     #logger.debug(f"event.name = {event.name} was released!!!!!!")
-    if event.name == 'space':  # Replace 'space' with your desired key
-        if space_state==True:
-            space_state = False
-            with press_lock:  
-                press_duration = time.time() - press_start_time
-                #logger.debug(f"on_key_release - press_duration = {press_duration}")
-                if press_duration >= LONG_PRESS_MIN:
-                    #logger.debug("LONG PRESS DETECTED")
-                    handle_long_press()
-                else:
-                    press_count += 1
-                    threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
+
+    if button_state==True:
+        button_state = False
+        with press_lock:  
+            press_duration = time.time() - press_start_time
+            #logger.debug(f"on_key_release - press_duration = {press_duration}")
+            if press_duration >= LONG_PRESS_MIN:
+                #logger.debug("LONG PRESS DETECTED")
+                handle_long_press()
+            else:
+                press_count += 1
+                threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
 
 # This might be needed for the GPIO button press and so keeping for now
 # Key press process is working on Mac keyboard
@@ -181,8 +185,8 @@ def handle_long_press():
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.RISING, callback=button_pressed)
-    GPIO.add_event_detect(17, GPIO.FALLING, callback=button_released)
+    GPIO.add_event_detect(17, GPIO.RISING, callback=on_key_press)
+    GPIO.add_event_detect(17, GPIO.FALLING, callback=on_key_release)
 
 
 # Update listen_for_key function to call button_callback on key press and release
