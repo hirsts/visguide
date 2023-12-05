@@ -1,5 +1,7 @@
 import argparse
 import os
+import threading
+from threading import Lock
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -12,7 +14,7 @@ import logging
 import errno
 import simpleaudio as sa
 from openai import OpenAI
-from elevenlabs import generate, play, set_api_key, voices
+from elevenlabs import generate, set_api_key, stream
 
 # Get options from command line arguments
 parser = argparse.ArgumentParser()
@@ -57,6 +59,7 @@ if is_running_on_raspberry_pi():
     logger.info("Running on Raspberry Pi, GPIO module imported")
 else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
+    import keyboard
 
 # load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
@@ -68,17 +71,123 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
         else:
             logger.warning('Required environment variables are not set and no .env file found')
 
-# Setup the button
-def button_callback(channel):
-    logger.info("Button was pushed!")
-    # Implement the action to be taken when the button is pressed
 
-# Setup GPIO Pins
+# Constants for press detection
+SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
+DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
+TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
+LONG_PRESS_MIN = 1  # Min duration for a long press (seconds)
+
+# Global variables to track press patterns
+last_press_time = 0
+press_count = 0
+press_start_time = 0
+press_lock = Lock()  # Thread lock for synchronizing access to global variables
+button_state = False
+
+# Space Key press event handler
+def keyboard_event(event):
+    if event.event_type == keyboard.KEY_DOWN:
+        # Only handle key down events for the space key
+        if event.name == 'space':
+            #logger.debug(f"Keyboard event detected: {event.event_type}")
+            #logger.debug(f"keyboard_event - calling on_key_press")
+            on_key_press()
+
+    elif event.event_type == keyboard.KEY_UP:
+        # Only handle key up events for the space key
+        if event.name == 'space':
+            on_key_release()
+
+# Key press event handler
+def on_key_press():
+    global press_start_time, button_state
+    if button_state==False:
+        with press_lock:
+            press_start_time = time.time()
+            button_state = True
+            #logger.debug(f"on_key_press - Press start time: {press_start_time}")
+
+# Key release event handler
+def on_key_release():
+    global press_start_time, press_count, button_state
+    #logger.debug(f"event.name = {event.name} was released!!!!!!")
+
+    if button_state==True:
+        button_state = False
+        with press_lock:  
+            press_duration = time.time() - press_start_time
+            #logger.debug(f"on_key_release - press_duration = {press_duration}")
+            if press_duration >= LONG_PRESS_MIN:
+                #logger.debug("LONG PRESS DETECTED")
+                handle_long_press()
+            else:
+                press_count += 1
+                threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
+
+
+def check_press_count(press_duration):
+    global press_count
+    with press_lock:
+        if press_count == 1:
+            handle_single_press(press_duration)
+        elif press_count == 2:
+            handle_double_press()
+        elif press_count == 3:
+            handle_triple_press()
+        press_count = 0
+
+
+# Handlers for different press types
+def handle_single_press(press_duration):
+    if press_duration < SINGLE_PRESS_MAX:
+        logger.info("Single Press Detected")
+        # Implement single press action
+
+def handle_double_press():
+    global press_count
+    press_count = 0
+    logger.info("Double Press Detected")
+    # Implement double press action
+
+def handle_triple_press():
+    global press_count
+    press_count = 0
+    logger.info("Triple Press Detected")
+    # Implement triple press action
+
+def handle_long_press():
+    global press_count
+    press_count = 0
+    logger.info("Long Press Detected")
+    # Implement long press action
+
+
+# GPIO event handler
+def GPIO_press(channel):
+    logger.info(f"{channel} Button was pressed!")
+    logger.debug(f"State of : {GPIO.input(channel)}")
+    # Implement the action to be taken when the button is pressed
+    on_key_press()
+    # Wait for GPIO button to be released by checking the state of the button
+    while GPIO.input(channel) == 0:
+        pass
+    on_key_release()
+
+# Update the GPIO setup
 if is_running_on_raspberry_pi():
-    # Setup GPIO Pins only if on Raspberry Pi
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.FALLING, callback=button_callback, bouncetime=200)
+    GPIO.add_event_detect(17, GPIO.FALLING, callback=GPIO_press, bouncetime=200)
+
+# Update listen_for_key function to call button_callback on key press and release
+def listen_for_key():
+    # Add hooks for key press and release
+    keyboard.hook(keyboard_event)
+
+    # Loop to keep the thread alive
+    while True:
+        time.sleep(1)
 
 # Initialize the webcam
 cap = cv2.VideoCapture(0)
@@ -173,30 +282,15 @@ def capture_image():
     else:
         logger.warning("Failed to capture image")
 
-
 def play_audio(text):
     try:
-        # Split the text into the first sentence and the rest of the text
-        first_sentence, *rest = text.split(".")  # Split on the first period
-        
-        # Calls the ElevenLabs API to generate audio and the resulting WAV is the variable "audio"
-        audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-
-        # If the debug option is set, save the audio to a file
-        if args.debug:
-            # Create a folder to store the audio if it doesn't exist
-            folder = "narration"
-            if not os.path.exists(folder):
-                logger.debug("Creating folder to store audio")
-                os.makedirs(folder, exist_ok=True)
-            path = f"{folder}/audio.wav"
-            logger.debug(f"Saving audio to {path}")
-            with open(path, 'wb') as f:
-                f.write(audio)
-
-        play(audio)
+        # Calls the ElevenLabs API to generate an audio stream
+        audio_stream = generate(text, stream=True, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
+        # Uses the ElevenLabs stream function to play the audio stream
+        stream(audio_stream)
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
+
 
 # FUNC: Generates the OpenAI "user" script
 # TODO: Explore if this an optimal prompt for each request.
@@ -241,9 +335,15 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
+# Main loop
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
+    # Set up keyboard event listener only if running on a non-Raspberry Pi device
+    if not is_running_on_raspberry_pi():
+        logger.debug("Running on a non-Raspberry Pi device, setting up keyboard event listener")
+        listener_thread = threading.Thread(target=listen_for_key, daemon=True) # This makes the thread exit when the main program exits
+        listener_thread.start()
 
     while True:
         try:
@@ -273,7 +373,9 @@ def main():
             continue
         except KeyboardInterrupt:
             logger.info("Script interrupted by user, exiting gracefully.")
-            GPIO.cleanup()
+            # Cleanup GPIO pins if on Raspberry Pi
+            if is_running_on_raspberry_pi():
+                GPIO.cleanup()
             cap.release()
             cv2.destroyAllWindows()
             exit(0)
@@ -289,6 +391,7 @@ while not check_internet(timeout=60, max_response_time=30):
     logger.info("Waiting for internet connection...")
     time.sleep(1)
 
+# Visguide is ready
 # Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
 # load the mp3 audio file
 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/VisGuide_is_ready.wav")
