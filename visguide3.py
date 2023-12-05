@@ -197,10 +197,7 @@ def GPIO_press(channel):
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.RISING, callback=GPIO_press, bouncetime=200)
-
-
-
+    GPIO.add_event_detect(17, GPIO.FALLING, callback=GPIO_press, bouncetime=200)
 
 # Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
