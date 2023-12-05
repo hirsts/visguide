@@ -387,9 +387,11 @@ def analyze_image(base64_image, script):
 def main():
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
-    # Set up keyboard event listener
-    listener_thread = threading.Thread(target=listen_for_key, daemon=True) # This makes the thread exit when the main program exits
-    listener_thread.start()
+    # Set up keyboard event listener only if running on a non-Raspberry Pi device
+    if not is_running_on_raspberry_pi():
+        logger.debug("Running on a non-Raspberry Pi device, setting up keyboard event listener")
+        listener_thread = threading.Thread(target=listen_for_key, daemon=True) # This makes the thread exit when the main program exits
+        listener_thread.start()
 
     while True:
         try:
