@@ -88,8 +88,8 @@ space_state = False
 # Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
-        logger.debug(f"Keyboard event detected: {event.event_type}")
-        logger.debug(f"keyboard_event - calling on_key_press")
+        #logger.debug(f"Keyboard event detected: {event.event_type}")
+        #logger.debug(f"keyboard_event - calling on_key_press")
         on_key_press(event)
     elif event.event_type == keyboard.KEY_UP:
         on_key_release(event)
@@ -102,20 +102,20 @@ def on_key_press(event):
             with press_lock:
                 press_start_time = time.time()
                 space_state = True
-                logger.debug(f"on_key_press - Press start time: {press_start_time}")
+                #logger.debug(f"on_key_press - Press start time: {press_start_time}")
 
 # Key release event handler
 def on_key_release(event):
     global press_start_time, press_count, space_state
-    logger.debug(f"event.name = {event.name} was released!!!!!!")
+    #logger.debug(f"event.name = {event.name} was released!!!!!!")
     if event.name == 'space':  # Replace 'space' with your desired key
         if space_state==True:
             space_state = False
             with press_lock:  
                 press_duration = time.time() - press_start_time
-                logger.debug(f"on_key_release - press_duration = {press_duration}")
+                #logger.debug(f"on_key_release - press_duration = {press_duration}")
                 if press_duration >= LONG_PRESS_MIN:
-                    logger.debug("LONG PRESS DETECTED")
+                    #logger.debug("LONG PRESS DETECTED")
                     handle_long_press()
                 else:
                     press_count += 1
