@@ -76,40 +76,50 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
 SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
 DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
 TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
-LONG_PRESS_MIN = 1.5  # Min duration for a long press (seconds)
+LONG_PRESS_MIN = 1  # Min duration for a long press (seconds)
 
 # Global variables to track press patterns
 last_press_time = 0
 press_count = 0
 press_start_time = 0
 press_lock = Lock()  # Thread lock for synchronizing access to global variables
-
+space_state = False
 
 # Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
+        logger.debug(f"Keyboard event detected: {event.event_type}")
+        logger.debug(f"keyboard_event - calling on_key_press")
         on_key_press(event)
     elif event.event_type == keyboard.KEY_UP:
         on_key_release(event)
 
 # Key press event handler
 def on_key_press(event):
-    global press_start_time
+    global press_start_time, space_state
     if event.name == 'space':  # Replace 'space' with your desired key
-        with press_lock:
-            press_start_time = time.time()
+        if space_state==False:
+            with press_lock:
+                press_start_time = time.time()
+                space_state = True
+                logger.debug(f"on_key_press - Press start time: {press_start_time}")
 
 # Key release event handler
 def on_key_release(event):
-    global press_start_time, press_count
+    global press_start_time, press_count, space_state
+    logger.debug(f"event.name = {event.name} was released!!!!!!")
     if event.name == 'space':  # Replace 'space' with your desired key
-        with press_lock:
-            press_duration = time.time() - press_start_time
-            if press_duration >= LONG_PRESS_MIN:
-                handle_long_press()
-            else:
-                press_count += 1
-                threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
+        if space_state==True:
+            space_state = False
+            with press_lock:  
+                press_duration = time.time() - press_start_time
+                logger.debug(f"on_key_release - press_duration = {press_duration}")
+                if press_duration >= LONG_PRESS_MIN:
+                    logger.debug("LONG PRESS DETECTED")
+                    handle_long_press()
+                else:
+                    press_count += 1
+                    threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
 
 # Example of distinguishing between press and release
 def button_pressed(channel):
