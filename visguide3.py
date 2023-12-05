@@ -185,7 +185,7 @@ def handle_long_press():
 
 def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
-    logger.debug(f"State of : {GPIO-input(channel)}")
+    logger.debug(f"State of : {GPIO.input(channel)}")
     # Implement the action to be taken when the button is pressed
     on_key_press()
     # Wait for GPIO button to be released by checking the state of the button
