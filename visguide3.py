@@ -189,7 +189,7 @@ def GPIO_press(channel):
     # Implement the action to be taken when the button is pressed
     on_key_press()
     # Wait for GPIO button to be released by checking the state of the button
-    while GPIO.input(channel) == 1:
+    while GPIO.input(channel) == 0:
         pass
     on_key_release()
 
