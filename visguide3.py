@@ -185,17 +185,20 @@ def handle_long_press():
 
 def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
+    logger.debug(f"State of : {GPIO-input(channel)}")
     # Implement the action to be taken when the button is pressed
     on_key_press(channel)
-    # Wait for GPIO button to be released
-    GPIO.wait_for_edge(17, GPIO.FALLING)
+    # Wait for GPIO button to be released by checking the state of the button
+    while GPIO.input(channel) == 0:
+        pass
     on_key_release(channel)
 
 # Update the GPIO setup
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(17, GPIO.RISING, callback=GPIO_press)
+    GPIO.add_event_detect(17, GPIO.RISING, callback=GPIO_press(channel=17))
+
 
 
 
