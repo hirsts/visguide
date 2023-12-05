@@ -121,24 +121,25 @@ def on_key_release(event):
                     press_count += 1
                     threading.Timer(SINGLE_PRESS_MAX, check_press_count, [press_duration]).start()
 
-# Example of distinguishing between press and release
-def button_pressed(channel):
-    logger.debug(f"{channel} Button was pressed!")
-    global press_start_time
-    press_start_time = time.time()
-    logger.debug(f"Press start time: {press_start_time}")
+# This might be needed for the GPIO button press and so keeping for now
+# Key press process is working on Mac keyboard
+# def button_pressed(channel):
+#     logger.debug(f"{channel} Button was pressed!")
+#     global press_start_time
+#     press_start_time = time.time()
+#     logger.debug(f"Press start time: {press_start_time}")
     
-def button_released(channel):
-    logger.debug(f"{channel} Button was released!")
-    global press_start_time, press_count
-    press_duration = time.time() - press_start_time
-    logger.debug(f"Press duration: {press_duration}")
+# def button_released(channel):
+#     logger.debug(f"{channel} Button was released!")
+#     global press_start_time, press_count
+#     press_duration = time.time() - press_start_time
+#     logger.debug(f"Press duration: {press_duration}")
 
-    if press_duration >= LONG_PRESS_MIN:
-        handle_long_press()
-    else:
-        press_count += 1
-        threading.Timer(SINGLE_PRESS_MAX, check_press_count).start()
+#     if press_duration >= LONG_PRESS_MIN:
+#         handle_long_press()
+#     else:
+#         press_count += 1
+#         threading.Timer(SINGLE_PRESS_MAX, check_press_count).start()
 
 def check_press_count(press_duration):
     global press_count
