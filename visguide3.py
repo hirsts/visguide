@@ -13,7 +13,6 @@ import subprocess
 import logging
 import errno
 import simpleaudio as sa
-import keyboard
 from openai import OpenAI
 from elevenlabs import generate, set_api_key, stream
 
@@ -60,6 +59,7 @@ if is_running_on_raspberry_pi():
     logger.info("Running on Raspberry Pi, GPIO module imported")
 else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
+    import keyboard
 
 # load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
