@@ -84,6 +84,8 @@ press_count = 0
 press_start_time = 0
 press_lock = Lock()  # Thread lock for synchronizing access to global variables
 button_state = False
+global Action, script, timings
+Action = "None"
 
 # Space Key press event handler
 def keyboard_event(event):
@@ -140,8 +142,14 @@ def check_press_count(press_duration):
 
 # Handlers for different press types
 def handle_single_press(press_duration):
+    global Action
     if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
+        # Set the Action variable to equal Single
+        Action = "Single"
+        logger.debug(f"Single Press Loop: Action = {Action}")
+
+
         # Implement single press action
 
 def handle_double_press():
@@ -335,8 +343,32 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
+# Main single loop process
+def single_loop():
+    # Start the timers
+    start_time = time.time()
+
+    # Capture the image
+    base64_image = capture_image()
+
+    logger.info(" Sending image for narration ...")
+    analysis_start_time = time.time()
+    analysis = analyze_image(base64_image, script=script)
+    timings['analysis'] += time.time() - analysis_start_time
+
+    logger.info("🎙️ VisGuide says:")
+    logger.info(analysis)
+
+    playback_start_time = time.time()
+    play_audio(analysis)
+    timings['audio_playback'] += time.time() - playback_start_time
+
+    script = script + [{"role": "assistant", "content": analysis}]
+
+
 # Main loop
 def main():
+    global Action, script, timings
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
     # Set up keyboard event listener only if running on a non-Raspberry Pi device
@@ -347,27 +379,19 @@ def main():
 
     while True:
         try:
-            # Start the timers
-            start_time = time.time()
-
-            # Capture the image
-            base64_image = capture_image()
-
-            logger.info(" Sending image for narration ...")
-            analysis_start_time = time.time()
-            analysis = analyze_image(base64_image, script=script)
-            timings['analysis'] += time.time() - analysis_start_time
-
-            logger.info("🎙️ VisGuide says:")
-            logger.info(analysis)
-
-            playback_start_time = time.time()
-            play_audio(analysis)
-            timings['audio_playback'] += time.time() - playback_start_time
-
-            script = script + [{"role": "assistant", "content": analysis}]
-
-            time.sleep(5)
+            # If environment variable = single, run single loop
+            logger.debug(f"Main Loop: Action = {Action}")
+            logger.debug(f"Main Loop: VISMODE = {os.environ.get('VISMODE')}")
+            if os.environ.get('VISMODE') == 'Single':
+                # Wait for the button press
+                if Action == "Single":
+                    single_loop()
+                    Action = "None"
+            # If environment variable = continuous, run continuous loop
+            elif os.environ.get('VISMODE') == 'Continuous':
+                single_loop()
+                time.sleep(5)
+            time.sleep(1)
         except Exception as e:
             logger.error(f"An error occurred in main loop: {e}")
             continue
