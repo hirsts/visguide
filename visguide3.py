@@ -345,6 +345,7 @@ def analyze_image(base64_image, script):
 
 # Main single loop process
 def single_loop():
+    global Action, script, timings
     # Start the timers
     start_time = time.time()
 
