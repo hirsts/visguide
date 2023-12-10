@@ -4,7 +4,7 @@ import sys
 import fileinput
 import threading
 from threading import Lock
-import requests
+# import requests
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -14,19 +14,19 @@ import base64
 import time
 import subprocess
 import logging
-import errno
+# import errno
 import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
 
-# Get options from command line arguments
+# ACTION: Get options from command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-s", "--syslog", action="store_true")
 args = parser.parse_args()
 
-# Set the logging level based on the verbose and debug options
+# ACTION: Set the logging level based on the verbose and debug options
 if args.verbose:
     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
@@ -47,7 +47,7 @@ if args.syslog:
     logger.addHandler(syslog_handler)
 
 
-# Define a function to check if the script is running on a Raspberry Pi
+# FUNC: Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
     try:
         with open("/sys/firmware/devicetree/base/model", "r") as f:
@@ -56,7 +56,7 @@ def is_running_on_raspberry_pi():
     except Exception:
         return False
 
-# Conditional imports for Raspberry Pi specific modules
+# ACTION: Conditional imports for Raspberry Pi specific modules
 if is_running_on_raspberry_pi():
     import RPi.GPIO as GPIO
     logger.info("Running on Raspberry Pi, GPIO module imported")
@@ -64,7 +64,7 @@ else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
     import keyboard
 
-# load the environment variables from the .env file if they are not set
+# ACTION: load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
         # If not set, check for .env file and load it
         dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -75,7 +75,7 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
             logger.warning('Required environment variables are not set and no .env file found')
 
 
-# Constants for press detection
+# ACTION: Constants for press detection
 SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
 DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
 TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
@@ -92,7 +92,9 @@ Action = "None"
 interrupt_main_process = False
 stop_audio_stream = False
 
-# Space Key press event handler
+
+
+# FUNC: Space Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
         # Only handle key down events for the space key
@@ -106,7 +108,7 @@ def keyboard_event(event):
         if event.name == 'space':
             on_key_release()
 
-# Key press event handler
+# FUNC: Key press event handler
 def on_key_press():
     global press_start_time, button_state
     if button_state==False:
@@ -144,7 +146,7 @@ def check_press_count(press_duration):
             handle_triple_press()
         press_count = 0
 
-# Preload into variables the prompts from prompts.txt. Each line is a key value pair separated by an equals sign
+# ACTION: Preload into variables the prompts from prompts.txt. Each line is a key value pair separated by an equals sign
 # Open the prompts.txt file
 with open('prompts.txt') as f:
     # each line is a key value pair separated by an equals sign
@@ -160,9 +162,12 @@ with open('prompts.txt') as f:
         logger.debug(f"Value of global variable {key}: {globals()[key]}")
     # List each global variable that starts with PROMPT
     logger.debug(f"List of global variables that start with PROMPT: {[key for key in globals().keys() if key.startswith('PROMPT')]}")
+if os.environ.get('VISSTYLE') == 'Guide':
+    context = os.environ.get('PROMPT_Guide')
+elif os.environ.get('VISSTYLE') == 'Tourist':
+    context = os.environ.get('PROMPT_Tourist')
 
-
-# Define a function to find a line in a file starting with something specific and replace it with a new line
+# FUNC: Define a function to find a line in a file starting with something specific and replace it with a new line
 def replace_line_in_file(file_path, line_starts_with, new_line):
         # Read the file line by line
     for line in fileinput.input(file_path, inplace=True):
@@ -171,9 +176,9 @@ def replace_line_in_file(file_path, line_starts_with, new_line):
         sys.stdout.write(line)
 
 
-# Handlers for different press types
+# FUNC: Handlers for different press types
 def handle_single_press(press_duration):
-    global Action, interrupt_main_process
+    global context, Action, interrupt_main_process
     if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
         # Set the stop_audio_stream flag to True
@@ -185,12 +190,13 @@ def handle_single_press(press_duration):
         context = globals()['PROMPT_Guide']
 
         interrupt_main_process = True
+        # Play the camera click sound
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
+        play_obj = wave_obj.play()
 
-
-        # Implement single press action
 
 def handle_double_press():
-    global press_count, Action, stop_audio_stream
+    global context, press_count, Action, stop_audio_stream
     press_count = 0
     logger.info("Double Press Detected")
     # Implement double press action
@@ -199,6 +205,12 @@ def handle_double_press():
     logger.debug(f"Double Press Loop: Action = {Action}")
     # Set the context variable to equal the value of the PROMPT_Guide global variable
     context = globals()['PROMPT_Tourist']
+    logger.debug(f"Double Press Loop: context = {context}")
+    # Play the camera click sound
+    wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
+    play_obj = wave_obj.play()
+    time.sleep(0.2)
+    play_obj = wave_obj.play()
 
 def handle_triple_press():
     global press_count
@@ -267,7 +279,7 @@ def handle_long_press():
 
 
 
-# GPIO event handler
+# FUNC: GPIO event handler
 def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
     logger.debug(f"State of : {GPIO.input(channel)}")
@@ -284,7 +296,7 @@ if is_running_on_raspberry_pi():
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(17, GPIO.FALLING, callback=GPIO_press, bouncetime=200)
 
-# Update listen_for_key function to call button_callback on key press and release
+# FUNC: Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
     # Add hooks for key press and release
     keyboard.hook(keyboard_event)
@@ -293,7 +305,7 @@ def listen_for_key():
     while True:
         time.sleep(1)
 
-# Initialize the webcam
+# ACTION: Initialize the webcam
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
 if not cap.isOpened():
@@ -303,12 +315,13 @@ if not cap.isOpened():
 # Wait for the camera to initialize and adjust light levels
 time.sleep(2)
 
-# Create an OpenAI client
+# ACTION: Create an OpenAI client
 client = OpenAI()
 
 # # Set the ElevenLabs API key 
 # set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
+# FUNC: Check if the internet is connected by pinging Google DNS
 def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 seconds, and default max_response_time is 30ms
     hostname = "8.8.8.8"
     start_time = time.time()
@@ -349,7 +362,7 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
     play_obj.wait_done()
     return False
 
-
+# FUNC: Capture an image from the webcam and return it as a base64 encoded string
 def capture_image():
     ret, frame = cap.read()
     if ret:
@@ -386,7 +399,7 @@ def capture_image():
     else:
         logger.warning("Failed to capture image")
 
-
+# FUNC: Calls the ElevenLabs API to generate an audio stream and plays it
 def play_audio(text):
     global stop_audio_stream
     logger.debug(f"play_audio func started - stop_audio_stream = {stop_audio_stream}")
@@ -418,8 +431,6 @@ def play_audio(text):
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
 
-# Create a function to call the ElevenLabs API to generate an audio stream and play it
-
 
 # FUNC: Generates the OpenAI "user" script
 # TODO: Explore if this an optimal prompt for each request.
@@ -439,13 +450,8 @@ def generate_new_line(base64_image):
 
 # FUNC: Send image to OPENAI to get text summary back
 def analyze_image(base64_image, script):
+    global context
     try:
-        context = os.environ.get('CONTEXT', """
-            You are a guide for the blind. Describe the image with a focus on major features with a priority on risk. 
-            For example if there is a door ahead, is it opened or closed and how many paces is it. Another example would be where there is a road ahead, how many paces is it, is it busy or quiet. 
-            Dont repeat yourself and keep each description to 4 seconds.
-            Assume the image is always the view ahead.
-        """)
         response = client.chat.completions.create(
             model="gpt-4-vision-preview",
             messages=[
@@ -466,13 +472,9 @@ def analyze_image(base64_image, script):
 
 # Main single loop process
 def single_loop():
-    global Action, script, timings, voice_id
+    global Action, script, timings, voice_id, context
     # Start the timers
     start_time = time.time()
-
-    # Play the camera click sound
-    wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
-    play_obj = wave_obj.play()
     
     # Capture the image
     base64_image = capture_image()
