@@ -1,7 +1,10 @@
 import argparse
 import os
+import sys
+import fileinput
 import threading
 from threading import Lock
+# import requests
 from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
@@ -11,19 +14,19 @@ import base64
 import time
 import subprocess
 import logging
-import errno
+# import errno
 import simpleaudio as sa
 from openai import OpenAI
-from elevenlabs import generate, set_api_key, stream
+from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
 
-# Get options from command line arguments
+# ACTION: Get options from command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-s", "--syslog", action="store_true")
 args = parser.parse_args()
 
-# Set the logging level based on the verbose and debug options
+# ACTION: Set the logging level based on the verbose and debug options
 if args.verbose:
     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
@@ -44,7 +47,7 @@ if args.syslog:
     logger.addHandler(syslog_handler)
 
 
-# Define a function to check if the script is running on a Raspberry Pi
+# FUNC: Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
     try:
         with open("/sys/firmware/devicetree/base/model", "r") as f:
@@ -53,7 +56,7 @@ def is_running_on_raspberry_pi():
     except Exception:
         return False
 
-# Conditional imports for Raspberry Pi specific modules
+# ACTION: Conditional imports for Raspberry Pi specific modules
 if is_running_on_raspberry_pi():
     import RPi.GPIO as GPIO
     logger.info("Running on Raspberry Pi, GPIO module imported")
@@ -61,7 +64,7 @@ else:
     logger.info("Not running on Raspberry Pi, GPIO module not imported")
     import keyboard
 
-# load the environment variables from the .env file if they are not set
+# ACTION: load the environment variables from the .env file if they are not set
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
         # If not set, check for .env file and load it
         dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -72,7 +75,7 @@ if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ 
             logger.warning('Required environment variables are not set and no .env file found')
 
 
-# Constants for press detection
+# ACTION: Constants for press detection
 SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
 DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
 TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
@@ -84,8 +87,14 @@ press_count = 0
 press_start_time = 0
 press_lock = Lock()  # Thread lock for synchronizing access to global variables
 button_state = False
+global Action, script, timings
+Action = "None"
+interrupt_main_process = False
+stop_audio_stream = False
 
-# Space Key press event handler
+
+
+# FUNC: Space Key press event handler
 def keyboard_event(event):
     if event.event_type == keyboard.KEY_DOWN:
         # Only handle key down events for the space key
@@ -99,7 +108,7 @@ def keyboard_event(event):
         if event.name == 'space':
             on_key_release()
 
-# Key press event handler
+# FUNC: Key press event handler
 def on_key_press():
     global press_start_time, button_state
     if button_state==False:
@@ -137,33 +146,140 @@ def check_press_count(press_duration):
             handle_triple_press()
         press_count = 0
 
+# ACTION: Preload into variables the prompts from prompts.txt. Each line is a key value pair separated by an equals sign
+# Open the prompts.txt file
+with open('prompts.txt') as f:
+    # each line is a key value pair separated by an equals sign
+    # read each line, one at a time, and split it into a key and value
+    for line in f:
+        key, value = line.split('=')
+        # remove any whitespace from the key and value
+        key = key.strip()
+        value = value.strip()
+        # Assign the value to a global variable with the key as the variable name
+        globals()[key] = value
+        # Log the value of the global variable
+        logger.debug(f"Value of global variable {key}: {globals()[key]}")
+    # List each global variable that starts with PROMPT
+    logger.debug(f"List of global variables that start with PROMPT: {[key for key in globals().keys() if key.startswith('PROMPT')]}")
+if os.environ.get('VISSTYLE') == 'Guide':
+    context = os.environ.get('PROMPT_Guide')
+elif os.environ.get('VISSTYLE') == 'Tourist':
+    context = os.environ.get('PROMPT_Tourist')
 
-# Handlers for different press types
+# FUNC: Define a function to find a line in a file starting with something specific and replace it with a new line
+def replace_line_in_file(file_path, line_starts_with, new_line):
+        # Read the file line by line
+    for line in fileinput.input(file_path, inplace=True):
+        if line.strip().startswith(line_starts_with):
+            line = new_line
+        sys.stdout.write(line)
+
+
+# FUNC: Handlers for different press types
 def handle_single_press(press_duration):
+    global context, Action, interrupt_main_process
     if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
-        # Implement single press action
+        # Set the stop_audio_stream flag to True
+        stop_audio_stream = True
+        # Set the Action variable to equal Single
+        Action = "Single"
+        logger.debug(f"Single Press Loop: Action = {Action}")
+        # Set the context variable to equal the value of the PROMPT_Guide global variable
+        context = globals()['PROMPT_Guide']
+
+        interrupt_main_process = True
+        # Play the camera click sound
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
+        play_obj = wave_obj.play()
+
 
 def handle_double_press():
-    global press_count
+    global context, press_count, Action, stop_audio_stream
     press_count = 0
     logger.info("Double Press Detected")
     # Implement double press action
+    stop_audio_stream = True
+    Action = "Single"
+    logger.debug(f"Double Press Loop: Action = {Action}")
+    # Set the context variable to equal the value of the PROMPT_Guide global variable
+    context = globals()['PROMPT_Tourist']
+    logger.debug(f"Double Press Loop: context = {context}")
+    # Play the camera click sound
+    wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
+    play_obj = wave_obj.play()
+    time.sleep(0.2)
+    play_obj = wave_obj.play()
 
 def handle_triple_press():
     global press_count
     press_count = 0
     logger.info("Triple Press Detected")
     # Implement triple press action
+    # Toggle the style based on the current style
+    if os.environ.get('VISSTYLE') == 'Guide':
+        os.environ['VISSTYLE'] = 'Tourist'
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_tourist_style_narration.wav")
+        play_obj = wave_obj.play()
+        logger.info("VISSTYLE set to Tourist")
+        replace_line_in_file(".env", "export VISSTYLE", f"export VISSTYLE=\"{os.environ.get('VISSTYLE')}\"\n")
+
+    elif os.environ.get('VISSTYLE') == 'Tourist':
+        os.environ['VISSTYLE'] = 'Guide'
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_guide_style_narration.wav")
+        play_obj = wave_obj.play()
+        logger.info("VISSTYLE set to Guide")
+        replace_line_in_file(".env", "export VISSTYLE", f"export VISSTYLE=\"{os.environ.get('VISSTYLE')}\"\n")
+
+    else:
+        logger.warning("VISSTYLE environment variable not set")
+        os.environ['VISSTYLE'] = 'Guide'
+        logger.info("VISSTYLE set to Guide")
+        logger.debug(f"VISSTYLE = {os.environ.get('VISSTYLE')}")
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_guide_style_narration.wav")
+        play_obj = wave_obj.play()
+        replace_line_in_file(".env", "export VISSTYLE", f"export VISSTYLE=\"{os.environ.get('VISSTYLE')}\"\n")
+    play_obj.wait_done()
+
 
 def handle_long_press():
     global press_count
     press_count = 0
     logger.info("Long Press Detected")
     # Implement long press action
+    # Set the VISMODE environment variable
+    if os.environ.get('VISMODE') == 'Single':
+        os.environ['VISMODE'] = 'Continuous'
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_continuous_mode.wav")
+        play_obj = wave_obj.play()
+        play_obj.wait_done()
+        logger.info("VISMODE set to Continuous")
+    elif os.environ.get('VISMODE') == 'Continuous':
+        os.environ['VISMODE'] = 'Single'
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_single_mode.wav")
+        play_obj = wave_obj.play()
+        logger.info("VISMODE set to Single")
+    else:
+        logger.warning("VISMODE environment variable not set")
+        os.environ['VISMODE'] = 'Single'
+        logger.info("VISMODE set to Single")
+        logger.debug(f"VISMODE = {os.environ.get('VISMODE')}")
+        # Play the user warning audio file
+        wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_single_mode.wav")
+        play_obj = wave_obj.play()
+    # Write the updated value to the .env file
+    # replace_line_in_file(".env", "export VISMODE", f"export VISMODE=\"{os.environ.get('VISMODE')}\"\n")
+    play_obj.wait_done()
 
 
-# GPIO event handler
+
+# FUNC: GPIO event handler
 def GPIO_press(channel):
     logger.info(f"{channel} Button was pressed!")
     logger.debug(f"State of : {GPIO.input(channel)}")
@@ -180,7 +296,7 @@ if is_running_on_raspberry_pi():
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(17, GPIO.FALLING, callback=GPIO_press, bouncetime=200)
 
-# Update listen_for_key function to call button_callback on key press and release
+# FUNC: Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
     # Add hooks for key press and release
     keyboard.hook(keyboard_event)
@@ -189,7 +305,7 @@ def listen_for_key():
     while True:
         time.sleep(1)
 
-# Initialize the webcam
+# ACTION: Initialize the webcam
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
 if not cap.isOpened():
@@ -199,12 +315,13 @@ if not cap.isOpened():
 # Wait for the camera to initialize and adjust light levels
 time.sleep(2)
 
-# Create an OpenAI client
+# ACTION: Create an OpenAI client
 client = OpenAI()
 
-# Set the ElevenLabs API key 
-set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
+# # Set the ElevenLabs API key 
+# set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
+# FUNC: Check if the internet is connected by pinging Google DNS
 def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 seconds, and default max_response_time is 30ms
     hostname = "8.8.8.8"
     start_time = time.time()
@@ -245,7 +362,7 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
     play_obj.wait_done()
     return False
 
-
+# FUNC: Capture an image from the webcam and return it as a base64 encoded string
 def capture_image():
     ret, frame = cap.read()
     if ret:
@@ -282,12 +399,35 @@ def capture_image():
     else:
         logger.warning("Failed to capture image")
 
+# FUNC: Calls the ElevenLabs API to generate an audio stream and plays it
 def play_audio(text):
+    global stop_audio_stream
+    logger.debug(f"play_audio func started - stop_audio_stream = {stop_audio_stream}")
+    stop_audio_stream = False
+    logger.debug(f"play_audio func step 2 - stop_audio_stream = {stop_audio_stream}")
+    set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
+    voice_id = os.environ.get("ELEVENLABS_VOICE_ID") 
     try:
         # Calls the ElevenLabs API to generate an audio stream
-        audio_stream = generate(text, stream=True, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
-        # Uses the ElevenLabs stream function to play the audio stream
+        logger.debug(f"play_audio func step 3 - call generate from API - stop_audio_stream = {stop_audio_stream}")
+        audio_stream = generate(
+            text=text,
+            voice=Voice(
+                voice_id=os.environ.get("ELEVENLABS_VOICE_ID"),
+                settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)),
+            model="eleven_turbo_v2",
+            stream=True,
+            stream_chunk_size=4096
+        )
+        
+        # Play audio stream without chunking
+        logging.debug(f"play_audio func step 5 - Playing stream - stop_audio_stream = {stop_audio_stream}")
         stream(audio_stream)
+        
+        # Reset the stop flag
+        logging.debug(f"play_audio func step 6 - Playing finished - stop_audio_stream = {stop_audio_stream}")
+        stop_audio_stream = False
+       
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
 
@@ -310,13 +450,8 @@ def generate_new_line(base64_image):
 
 # FUNC: Send image to OPENAI to get text summary back
 def analyze_image(base64_image, script):
+    global context
     try:
-        context = os.environ.get('CONTEXT', """
-            You are a guide for the blind. Describe the image with a focus on major features with a priority on risk. 
-            For example if there is a door ahead, is it opened or closed and how many paces is it. Another example would be where there is a road ahead, how many paces is it, is it busy or quiet. 
-            Dont repeat yourself and keep each description to 4 seconds.
-            Assume the image is always the view ahead.
-        """)
         response = client.chat.completions.create(
             model="gpt-4-vision-preview",
             messages=[
@@ -335,8 +470,35 @@ def analyze_image(base64_image, script):
         logger.error(f"Error in analyze_image: {e}")
         raise
 
+# Main single loop process
+def single_loop():
+    global Action, script, timings, voice_id, context
+    # Start the timers
+    start_time = time.time()
+    
+    # Capture the image
+    base64_image = capture_image()
+
+    logger.info(" Sending image for narration ...")
+    analysis_start_time = time.time()
+    analysis = analyze_image(base64_image, script=script)
+    timings['analysis'] += time.time() - analysis_start_time
+
+    logger.info("🎙️ VisGuide says:")
+    logger.info(analysis)
+
+    playback_start_time = time.time()
+    #play_audio_in_thread(analysis)
+    logging.debug(f"single_loop - calling play_audio")
+    play_audio(analysis)
+    timings['audio_playback'] += time.time() - playback_start_time
+
+    script = script + [{"role": "assistant", "content": analysis}]
+
+
 # Main loop
 def main():
+    global Action, script, timings, interrupt_main_process
     script = []
     timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
     # Set up keyboard event listener only if running on a non-Raspberry Pi device
@@ -346,57 +508,65 @@ def main():
         listener_thread.start()
 
     while True:
-        try:
-            # Start the timers
-            start_time = time.time()
+        # Check if the main process needs to be interrupted
+        if interrupt_main_process:
+            # Reset necessary variables or perform any cleanup
+            Action = "None"
+            script = []
+            timings = {'image_encoding': 0, 'analysis': 0, 'audio_playback': 0}
 
-            # Capture the image
-            base64_image = capture_image()
+            # Reset the interrupt flag
+            interrupt_main_process = False
 
-            logger.info(" Sending image for narration ...")
-            analysis_start_time = time.time()
-            analysis = analyze_image(base64_image, script=script)
-            timings['analysis'] += time.time() - analysis_start_time
+            # Optionally, add a delay or logging
+            logger.info("Restarting main process...")
+            time.sleep(1)
 
-            logger.info("🎙️ VisGuide says:")
-            logger.info(analysis)
+        while True:
+            try:
+                # If environment variable = single, run single loop
+                logger.debug(f"Main Loop: Action = {Action}")
+                logger.debug(f"Main Loop: VISMODE = {os.environ.get('VISMODE')}")
+                if os.environ.get('VISMODE') == 'Single':
+                    # Wait for the button press
+                    if Action == "Single":
+                        single_loop()
+                        Action = "None"
+                # If environment variable = continuous, run continuous loop
+                elif os.environ.get('VISMODE') == 'Continuous':
+                    single_loop()
+                    time.sleep(5)
+                time.sleep(1)
+            except Exception as e:
+                logger.error(f"An error occurred in main loop: {e}")
+                continue
+            except KeyboardInterrupt:
+                logger.info("Script interrupted by user, exiting gracefully.")
+                # Cleanup GPIO pins if on Raspberry Pi
+                if is_running_on_raspberry_pi():
+                    GPIO.cleanup()
+                cap.release()
+                cv2.destroyAllWindows()
+                exit(0)
 
-            playback_start_time = time.time()
-            play_audio(analysis)
-            timings['audio_playback'] += time.time() - playback_start_time
-
-            script = script + [{"role": "assistant", "content": analysis}]
-
-            time.sleep(5)
-        except Exception as e:
-            logger.error(f"An error occurred in main loop: {e}")
-            continue
-        except KeyboardInterrupt:
-            logger.info("Script interrupted by user, exiting gracefully.")
-            # Cleanup GPIO pins if on Raspberry Pi
-            if is_running_on_raspberry_pi():
-                GPIO.cleanup()
-            cap.release()
-            cv2.destroyAllWindows()
-            exit(0)
-
-    # Report timings
-    for operation, time_taken in timings.items():
-        logger.info(f"{operation}: {time_taken:.2f} seconds")
+        # Report timings
+        for operation, time_taken in timings.items():
+            logger.info(f"{operation}: {time_taken:.2f} seconds")
 
 
     
 # Check for internet connectivity by pinging Google DNS
-while not check_internet(timeout=60, max_response_time=30):
+while not check_internet(timeout=60, max_response_time=100):
     logger.info("Waiting for internet connection...")
     time.sleep(1)
 
 # Visguide is ready
-# Play audio file ./assets/visguide_is_ready.mp3 to indicate that VisGuide app is ready
-# load the mp3 audio file
+# Play audio file ./assets/visguide_is_ready.wav to indicate that VisGuide app is ready
+# load the wav audio file
 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/VisGuide_is_ready.wav")
 # play the audio file
 play_obj = wave_obj.play()
+print("VisGuide is ready")
 
 if __name__ == "__main__":
     main()
