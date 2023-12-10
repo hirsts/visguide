@@ -566,6 +566,7 @@ while not check_internet(timeout=60, max_response_time=100):
 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/VisGuide_is_ready.wav")
 # play the audio file
 play_obj = wave_obj.play()
+print("VisGuide is ready")
 
 if __name__ == "__main__":
     main()
