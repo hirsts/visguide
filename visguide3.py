@@ -274,7 +274,7 @@ def handle_long_press():
         wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_single_mode.wav")
         play_obj = wave_obj.play()
     # Write the updated value to the .env file
-    replace_line_in_file(".env", "export VISMODE", f"export VISMODE=\"{os.environ.get('VISMODE')}\"\n")
+    # replace_line_in_file(".env", "export VISMODE", f"export VISMODE=\"{os.environ.get('VISMODE')}\"\n")
     play_obj.wait_done()
 
 
