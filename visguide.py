@@ -49,33 +49,39 @@ if args.syslog:
 
 # FUNC: Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
+    logger.debug("TIMING:Start TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:None")
     try:
         with open("/sys/firmware/devicetree/base/model", "r") as f:
             if "Raspberry Pi" in f.read():
+                logger.debug("TIMING:Start TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:True")
                 return True
     except Exception:
+        logger.debug("TIMING:End TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:False")
         return False
 
 # ACTION: Conditional imports for Raspberry Pi specific modules
 if is_running_on_raspberry_pi():
+    logger.debug("TIMING:Start TYPE:Action DESC:is_running_on_raspberry_pi() RESULT:True")
     import RPi.GPIO as GPIO
-    logger.info("Running on Raspberry Pi, GPIO module imported")
+    logger.debug("TIMING:End TYPE:Action DESC:is_running_on_raspberry_pi() RESULT:RPi.GPIO imported")
 else:
-    logger.info("Not running on Raspberry Pi, GPIO module not imported")
     import keyboard
+    logger.debug("TIMING:End TYPE:Action DESC:is_running_on_raspberry_pi() RESULT:RPi.GPIO not imported. keyboard imported")
 
 # ACTION: load the environment variables from the .env file if they are not set
+logger.debug("TIMING:Start TYPE:Action DESC:Load .env RESULT:None")
 if 'OPENAI_API_KEY' not in os.environ or 'ELEVENLABS_API_KEY' not in os.environ or 'ELEVENLABS_VOICE_ID' not in os.environ:
         # If not set, check for .env file and load it
         dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
         if os.path.exists(dotenv_path):
             load_dotenv(dotenv_path)
-            logger.info('.env file found and loaded')
+            logger.debug("TIMING:End TYPE:Action DESC:Load .env RESULT:Loaded")
         else:
-            logger.warning('Required environment variables are not set and no .env file found')
+            logger.warning("TIMING:End TYPE:Action DESC:Load .env RESULT:File not found")
 
 
-# ACTION: Constants for press detection
+# ACTION: Define global variables
+logger.debug("TIMING:Start TYPE:Action DESC:Define global variables RESULT:None")
 SINGLE_PRESS_MAX = 0.5  # Max duration for a single press (seconds)
 DOUBLE_PRESS_INTERVAL = 0.5  # Max interval between double presses (seconds)
 TRIPLE_PRESS_INTERVAL = 0.5  # Max interval between triple presses (seconds)
@@ -91,21 +97,25 @@ global Action, script, timings
 Action = "None"
 interrupt_main_process = False
 stop_audio_stream = False
+logger.debug("TIMING:End TYPE:Action DESC:Define global variables RESULT:Done")
 
 
 
 # FUNC: Space Key press event handler
 def keyboard_event(event):
+    logger.debug("TIMING:Start TYPE:Func DESC:Keyboard Event RESULT:None")
     if event.event_type == keyboard.KEY_DOWN:
         # Only handle key down events for the space key
         if event.name == 'space':
             #logger.debug(f"Keyboard event detected: {event.event_type}")
             #logger.debug(f"keyboard_event - calling on_key_press")
+            logger.debug("TIMING:End TYPE:Func DESC:Keyboard Event RESULT:Key Down")
             on_key_press()
 
     elif event.event_type == keyboard.KEY_UP:
         # Only handle key up events for the space key
         if event.name == 'space':
+            logger.debug("TIMING:End TYPE:Func DESC:Keyboard Event RESULT:Key Up")
             on_key_release()
 
 # FUNC: Key press event handler
@@ -148,7 +158,8 @@ def check_press_count(press_duration):
 
 # ACTION: Preload into variables the prompts from prompts.txt. Each line is a key value pair separated by an equals sign
 # Open the prompts.txt file
-with open('prompts.txt') as f:
+logger.debug("TIMING:Start TYPE:Action DESC:Preload prompts RESULT:None")
+with open('./prompts.txt') as f:
     # each line is a key value pair separated by an equals sign
     # read each line, one at a time, and split it into a key and value
     for line in f:
@@ -159,9 +170,10 @@ with open('prompts.txt') as f:
         # Assign the value to a global variable with the key as the variable name
         globals()[key] = value
         # Log the value of the global variable
-        logger.debug(f"Value of global variable {key}: {globals()[key]}")
+        # logger.debug(f"Value of global variable {key}: {globals()[key]}")
     # List each global variable that starts with PROMPT
-    logger.debug(f"List of global variables that start with PROMPT: {[key for key in globals().keys() if key.startswith('PROMPT')]}")
+    #logger.debug(f"List of global variables that start with PROMPT: {[key for key in globals().keys() if key.startswith('PROMPT')]}")
+logger.debug("TIMING:End TYPE:Action DESC:Preload prompts RESULT:Prompts loaded")
 if os.environ.get('VISSTYLE') == 'Guide':
     context = os.environ.get('PROMPT_Guide')
 elif os.environ.get('VISSTYLE') == 'Tourist':
@@ -169,15 +181,18 @@ elif os.environ.get('VISSTYLE') == 'Tourist':
 
 # FUNC: Define a function to find a line in a file starting with something specific and replace it with a new line
 def replace_line_in_file(file_path, line_starts_with, new_line):
+    logger.debug("TIMING:Start TYPE:Func DESC:replace_line_in_file RESULT:None")
         # Read the file line by line
     for line in fileinput.input(file_path, inplace=True):
         if line.strip().startswith(line_starts_with):
             line = new_line
         sys.stdout.write(line)
+    logger.debug("TIMING:End TYPE:Func DESC:replace_line_in_file RESULT:Done")
 
 
 # FUNC: Handlers for different press types
 def handle_single_press(press_duration):
+    logger.debug("TIMING:Start TYPE:Func DESC:handle_single_press RESULT:None")
     global context, Action, interrupt_main_process
     if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
@@ -193,9 +208,13 @@ def handle_single_press(press_duration):
         # Play the camera click sound
         wave_obj = sa.WaveObject.from_wave_file("./assets/wav/camera-capture.wav")
         play_obj = wave_obj.play()
+        logger.debug("TIMING:End TYPE:Func DESC:handle_single_press RESULT:Single press executed")
+    else:
+        logger.debug("TIMING:End TYPE:Func DESC:handle_single_press RESULT:Longer than single press duration")
 
 
 def handle_double_press():
+    logger.debug("TIMING:Start TYPE:Func DESC:handle_double_press RESULT:None")
     global context, press_count, Action, stop_audio_stream
     press_count = 0
     logger.info("Double Press Detected")
@@ -211,8 +230,10 @@ def handle_double_press():
     play_obj = wave_obj.play()
     time.sleep(0.2)
     play_obj = wave_obj.play()
+    logger.debug("TIMING:End TYPE:Func DESC:handle_double_press RESULT:Double press executed")
 
 def handle_triple_press():
+    logger.debug("TIMING:Start TYPE:Func DESC:handle_triple_press RESULT:None")
     global press_count
     press_count = 0
     logger.info("Triple Press Detected")
@@ -244,9 +265,11 @@ def handle_triple_press():
         play_obj = wave_obj.play()
         replace_line_in_file(".env", "export VISSTYLE", f"export VISSTYLE=\"{os.environ.get('VISSTYLE')}\"\n")
     play_obj.wait_done()
+    logger.debug("TIMING:End TYPE:Func DESC:handle_triple_press RESULT:Triple press executed")
 
 
 def handle_long_press():
+    logger.debug("TIMING:Start TYPE:Func DESC:handle_long_press RESULT:None")
     global press_count
     press_count = 0
     logger.info("Long Press Detected")
@@ -276,25 +299,30 @@ def handle_long_press():
     # Write the updated value to the .env file
     # replace_line_in_file(".env", "export VISMODE", f"export VISMODE=\"{os.environ.get('VISMODE')}\"\n")
     play_obj.wait_done()
+    logger.debug("TIMING:End TYPE:Func DESC:handle_long_press RESULT:Long press executed")
 
 
 
 # FUNC: GPIO event handler
 def GPIO_press(channel):
-    logger.info(f"{channel} Button was pressed!")
-    logger.debug(f"State of : {GPIO.input(channel)}")
+    logger.debug("TIMING:Start TYPE:Func DESC:GPIO_press RESULT:None")
+    #logger.info(f"{channel} Button was pressed!")
+    #logger.debug(f"State of : {GPIO.input(channel)}")
     # Implement the action to be taken when the button is pressed
     on_key_press()
     # Wait for GPIO button to be released by checking the state of the button
     while GPIO.input(channel) == 0:
         pass
     on_key_release()
+    logger.debug("TIMING:End TYPE:Func DESC:GPIO_press RESULT:GPIO press executed")
 
 # Update the GPIO setup
+logger.debug("TIMING:Start TYPE:Action DESC:If RPi load GPIO RESULT:None")
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(17, GPIO.FALLING, callback=GPIO_press, bouncetime=200)
+logger.debug("TIMING:End TYPE:Action DESC:If RPi load GPIO RESULT:GPIO setup complete")
 
 # FUNC: Update listen_for_key function to call button_callback on key press and release
 def listen_for_key():
@@ -306,6 +334,7 @@ def listen_for_key():
         time.sleep(1)
 
 # ACTION: Initialize the webcam
+logger.debug("TIMING:Start TYPE:Action DESC:Initialize the webcam RESULT:None")
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
 if not cap.isOpened():
@@ -314,15 +343,19 @@ if not cap.isOpened():
     exit(1)
 # Wait for the camera to initialize and adjust light levels
 time.sleep(2)
+logger.debug("TIMING:End TYPE:Action DESC:Initialize the webcam RESULT:Webcam initialized")
 
 # ACTION: Create an OpenAI client
+logger.debug("TIMING:Start TYPE:Action DESC:Create OpenAI client RESULT:None")
 client = OpenAI()
+logger.debug("TIMING:Start TYPE:Action DESC:Create OpenAI client RESULT:Created")
 
 # # Set the ElevenLabs API key 
 # set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
 
 # FUNC: Check if the internet is connected by pinging Google DNS
 def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 seconds, and default max_response_time is 30ms
+    logger.debug("TIMING:Start TYPE:Func DESC:Check the internet RESULT:None")
     hostname = "8.8.8.8"
     start_time = time.time()
 
@@ -339,6 +372,7 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
             ping_time = float(ping_response.split("time=")[1].split(" ms")[0])
             if ping_time <= max_response_time:
                 logger.info(f"Internet connection detected with ping time: {ping_time} ms")
+                logger.debug("TIMING:End TYPE:Func DESC:Check the internet RESULT:Good Internet connection detected")
                 return True
             else:
                 logger.warning(f"Slow internet response time: {ping_time} ms")
@@ -347,10 +381,12 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
                 wave_obj = sa.WaveObject.from_wave_file("./assets/wav/slow_internet.wav")
                 play_obj = wave_obj.play()
                 play_obj.wait_done()
+                logger.debug("TIMING:End TYPE:Func DESC:Check the internet RESULT:Slow Internet connection detected")
                 return True
         except subprocess.CalledProcessError:
             # This block is executed if the ping command fails
-            logger.warning("Ping command failed")
+            # logger.warning("Ping command failed")
+            logger.debug("TIMING:End TYPE:Func DESC:Check the internet RESULT:No Internet connection detected")
 
         # Sleep for a short duration before retrying
         time.sleep(1)
@@ -364,6 +400,7 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
 
 # FUNC: Capture an image from the webcam and return it as a base64 encoded string
 def capture_image():
+    logger.debug("TIMING:Start TYPE:Func DESC:Capture image RESULT:None")
     ret, frame = cap.read()
     if ret:
         # Convert the frame to a PIL image
@@ -384,6 +421,7 @@ def capture_image():
 
         # If debugging, save the frame as an image file
         if args.debug:
+            logger.debug("TIMING:Start TYPE:Sub Func DESC:Write image to file RESULT:None")
             # Create a folder to store the frames if it doesn't exist
             folder = "frames"
             if not os.path.exists(folder):
@@ -392,24 +430,29 @@ def capture_image():
             path = f"{folder}/frame.jpg"
             logger.debug(f"Saving frame to {path}")
             cv2.imwrite(path, frame_jpg)
+            logger.debug("TIMING:End TYPE:Sub Func DESC:Write image to file RESULT:File written to disk")
         # Delete the JPG version of the frame to save memory
         del frame_jpg
         # Return the base64 encoded image
+        logger.debug("TIMING:End TYPE:Func DESC:Capture image RESULT:Completed and returned frame")
         return frame
     else:
-        logger.warning("Failed to capture image")
+        #logger.warning("Failed to capture image")
+        logger.debug("TIMING:End TYPE:Func DESC:Capture image RESULT:Completed func but failed to capture image")
 
 # FUNC: Calls the ElevenLabs API to generate an audio stream and plays it
 def play_audio(text):
+    logger.debug("TIMING:Start TYPE:Func DESC:play_audio RESULT:None")
     global stop_audio_stream
-    logger.debug(f"play_audio func started - stop_audio_stream = {stop_audio_stream}")
+    #logger.debug(f"play_audio func started - stop_audio_stream = {stop_audio_stream}")
     stop_audio_stream = False
-    logger.debug(f"play_audio func step 2 - stop_audio_stream = {stop_audio_stream}")
+    #logger.debug(f"play_audio func step 2 - stop_audio_stream = {stop_audio_stream}")
     set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
     voice_id = os.environ.get("ELEVENLABS_VOICE_ID") 
     try:
         # Calls the ElevenLabs API to generate an audio stream
-        logger.debug(f"play_audio func step 3 - call generate from API - stop_audio_stream = {stop_audio_stream}")
+        logger.debug("TIMING:Start TYPE:Sub Func DESC:generate audio using Elevenlabs RESULT:None")
+        # logger.debug(f"play_audio func step 3 - call generate from API - stop_audio_stream = {stop_audio_stream}")
         audio_stream = generate(
             text=text,
             voice=Voice(
@@ -419,22 +462,28 @@ def play_audio(text):
             stream=True,
             stream_chunk_size=4096
         )
+        logger.debug("TIMING:End TYPE:Sub Func DESC:generate audio using Elevenlabs RESULT:Audio generated")
         
         # Play audio stream without chunking
-        logging.debug(f"play_audio func step 5 - Playing stream - stop_audio_stream = {stop_audio_stream}")
+        logger.debug("TIMING:Start TYPE:Sub Func DESC:stream audio RESULT:None")
+        # logging.debug(f"play_audio func step 5 - Playing stream - stop_audio_stream = {stop_audio_stream}")
         stream(audio_stream)
+        logger.debug("TIMING:End TYPE:Sub Func DESC:stream audio RESULT:Audio streamed")
         
         # Reset the stop flag
-        logging.debug(f"play_audio func step 6 - Playing finished - stop_audio_stream = {stop_audio_stream}")
+        # logging.debug(f"play_audio func step 6 - Playing finished - stop_audio_stream = {stop_audio_stream}")
         stop_audio_stream = False
        
     except Exception as e:
         logger.error(f"Error in play_audio: {e}")
 
+    logger.debug("TIMING:End TYPE:Func DESC:play_audio RESULT:Paying audio completed")
+
 
 # FUNC: Generates the OpenAI "user" script
 # TODO: Explore if this an optimal prompt for each request.
 def generate_new_line(base64_image):
+    logger.debug("TIMING:Start TYPE:Func DESC:generate_new_line RESULT:None")
     return [
         {
             "role": "user",
@@ -448,8 +497,10 @@ def generate_new_line(base64_image):
         },
     ]
 
+
 # FUNC: Send image to OPENAI to get text summary back
 def analyze_image(base64_image, script):
+    logger.debug("TIMING:Start TYPE:Func DESC:analyze_image RESULT:None")
     global context
     try:
         response = client.chat.completions.create(
@@ -465,35 +516,45 @@ def analyze_image(base64_image, script):
             max_tokens=500,
         )
         response_text = response.choices[0].message.content
+        logger.debug("TIMING:End TYPE:Func DESC:analyze_image RESULT:Image analyzed")
         return response_text
     except Exception as e:
-        logger.error(f"Error in analyze_image: {e}")
+        # logger.error(f"Error in analyze_image: {e}")
+        logger.debug(f"TIMING:End TYPE:Func DESC:analyze_image RESULT:{e}")
         raise
 
 # Main single loop process
 def single_loop():
+    logger.debug("TIMING:Start TYPE:Func DESC:single_loop RESULT:None")
     global Action, script, timings, voice_id, context
     # Start the timers
     start_time = time.time()
     
     # Capture the image
+    logger.debug("TIMING:Start TYPE:Action DESC:single_loop call capture RESULT:None")
     base64_image = capture_image()
+    logger.debug("TIMING:End TYPE:Action DESC:single_loop call capture RESULT:Capture image completed")
 
-    logger.info(" Sending image for narration ...")
+    # logger.info(" Sending image for narration ...")
+    logger.debug("TIMING:Start TYPE:Action DESC:single_loop call analyze_image RESULT:None")
     analysis_start_time = time.time()
     analysis = analyze_image(base64_image, script=script)
     timings['analysis'] += time.time() - analysis_start_time
+    logger.debug(f"TIMING:Start TYPE:Action DESC:single_loop call analyze_image RESULT:{analysis}")
 
     logger.info("🎙️ VisGuide says:")
     logger.info(analysis)
 
     playback_start_time = time.time()
     #play_audio_in_thread(analysis)
-    logging.debug(f"single_loop - calling play_audio")
+    # logging.debug(f"single_loop - calling play_audio")
+    logger.debug("TIMING:Start TYPE:Action DESC:single_loop call play_audio RESULT:None")
     play_audio(analysis)
     timings['audio_playback'] += time.time() - playback_start_time
+    logger.debug("TIMING:Start TYPE:Action DESC:single_loop call play_audio RESULT:Audio playback completed")
 
     script = script + [{"role": "assistant", "content": analysis}]
+    logger.debug("TIMING:End TYPE:Func DESC:single_loop RESULT:Single loop executed")
 
 
 # Main loop
