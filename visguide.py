@@ -2,8 +2,6 @@ import sys
 import fileinput
 import threading
 from threading import Lock
-# import requests
-# from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
 from PIL import Image
@@ -14,13 +12,12 @@ import subprocess
 import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
-
 import argparse
 import logging
 from logging.handlers import SysLogHandler
 import os  # Ensure os is imported for session ID generation
 
-# Custom Formatter with Session ID
+# FUNC: Custom logging formatter with Session ID
 class CustomFormatter(logging.Formatter):
     def __init__(self, session_id, fmt, datefmt=None):
         self.session_id = session_id
@@ -33,7 +30,7 @@ class CustomFormatter(logging.Formatter):
         return formatted_message.replace("{session_id}", self.session_id)
 
 
-# Parse command line arguments
+# ACTION: Parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
@@ -42,10 +39,10 @@ parser.add_argument("-t", "--target_host", type=str, help="Target host for syslo
 parser.add_argument("-p", "--target_port", type=int, help="Target port for syslog")
 args = parser.parse_args()
 
-# Generate a unique session ID
+# ACTION: Generate a unique session ID
 session_id = os.urandom(8).hex()
 
-# Set the logging level based on the verbose and debug options
+# ACTION: Set the logging level based on the verbose and debug options
 if args.verbose:
     logging_level = logging.INFO
 elif args.debug:
@@ -53,15 +50,15 @@ elif args.debug:
 else:
     logging_level = logging.WARNING
 
-# Common format with placeholder for session ID
+# ACTION: Common format with placeholder for session ID
 common_format = '%(asctime)s.%(msecs)03d - SID:{session_id} - MSG:%(levelname)s - %(message)s'
 date_format = '%Y-%m-%d %H:%M:%S'
 
-# Configure the root logger
+# ACTION: Configure the root logger
 logger = logging.getLogger()
 logger.setLevel(logging_level)
 
-# Create and set formatter with session ID for all handlers
+# ACTION: Create and set formatter with session ID for all handlers
 formatter = CustomFormatter(session_id, common_format, date_format)
 
 # Set syslog server and port
@@ -86,41 +83,6 @@ logger.warning("Warning message for testing")
 
 # Print directly to console for troubleshooting
 print("If this message appears but logging messages do not, there is an issue with logging configuration.")
-
-
-# # ACTION: Set the logging level based on the verbose and debug options
-# if args.verbose:
-#     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-#                         datefmt='%Y-%m-%d %H:%M:%S',
-#                         level=logging.INFO)
-# elif args.debug:
-#     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-#                         datefmt='%Y-%m-%d %H:%M:%S',
-#                         level=logging.DEBUG)
-# else:
-#     logging.basicConfig(level=logging.WARNING)
-
-# # If args.target_host is set, set the syslog server to the target host
-# if args.target_host:
-#     syslog_server = args.target_host
-# else:
-#     syslog_server = "splunk.local"
-
-# # Set the logging level based on the verbose and debug options
-# logger = logging.getLogger()
-
-# # If the syslog option is present, send logs to the syslog server
-# if args.syslog:
-#     # format syslog message with milliseconds
-#     syslog_format = logging.Formatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-#                                       datefmt='%Y-%m-%d %H:%M:%S')
-#     # create syslog handler
-
-#     syslog_handler = SysLogHandler(address=(syslog_server, 8516))
-#     # set syslog handler format
-#     syslog_handler.setFormatter(syslog_format)
-#     logger.addHandler(syslog_handler)
-
 
 # FUNC: Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
@@ -173,8 +135,6 @@ Action = "None"
 interrupt_main_process = False
 stop_audio_stream = False
 logger.debug("TIMING:End TYPE:Action DESC:Define global variables RESULT:Done")
-
-
 
 # FUNC: Space Key press event handler
 def keyboard_event(event):
