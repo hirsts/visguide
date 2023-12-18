@@ -1,4 +1,3 @@
-import os
 import sys
 import fileinput
 import threading
@@ -16,22 +15,23 @@ import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
 
-# ACTION: Import module to parse command line arguments
 import argparse
-
-# ACTION: Import logging modules
 import logging
 from logging.handlers import SysLogHandler
+import os  # Ensure os is imported for session ID generation
 
 # Custom Formatter with Session ID
 class CustomFormatter(logging.Formatter):
-    def __init__(self, session_id, fmt, datefmt):
+    def __init__(self, session_id, fmt, datefmt=None):
         self.session_id = session_id
         super(CustomFormatter, self).__init__(fmt, datefmt)
 
     def format(self, record):
-        original_message = super(CustomFormatter, self).format(record)
-        return f'[Session ID: {self.session_id}] {original_message}'
+        # First, format the record with the original formatting.
+        formatted_message = super(CustomFormatter, self).format(record)
+        # Now, insert the session ID.
+        return formatted_message.replace("{session_id}", self.session_id)
+
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -53,8 +53,8 @@ elif args.debug:
 else:
     logging_level = logging.WARNING
 
-# Common format for both console and syslog
-common_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+# Common format with placeholder for session ID
+common_format = '%(asctime)s.%(msecs)03d - SID:{session_id} - MSG:%(levelname)s - %(message)s'
 date_format = '%Y-%m-%d %H:%M:%S'
 
 # Configure the root logger
@@ -64,7 +64,7 @@ logger.setLevel(logging_level)
 # Create and set formatter with session ID for all handlers
 formatter = CustomFormatter(session_id, common_format, date_format)
 
-# Set syslog server
+# Set syslog server and port
 syslog_server = args.target_host if args.target_host else "splunk.local"
 syslog_port = args.target_port if args.target_port else 8516
 
@@ -86,6 +86,7 @@ logger.warning("Warning message for testing")
 
 # Print directly to console for troubleshooting
 print("If this message appears but logging messages do not, there is an issue with logging configuration.")
+
 
 # # ACTION: Set the logging level based on the verbose and debug options
 # if args.verbose:
