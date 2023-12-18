@@ -38,12 +38,19 @@ elif args.debug:
 else:
     logging.basicConfig(level=logging.WARNING)
 
+
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
 
 # If the syslog option is present, send logs to the syslog server
 if args.syslog:
+    # format syslog message with milliseconds
+    syslog_format = logging.Formatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                                      datefmt='%Y-%m-%d %H:%M:%S')
+    # create syslog handler
     syslog_handler = SysLogHandler(address=('splunk.local', 8516))
+    # set syslog handler format
+    syslog_handler.setFormatter(syslog_format)
     logger.addHandler(syslog_handler)
 
 
@@ -586,8 +593,8 @@ def main():
         while True:
             try:
                 # If environment variable = single, run single loop
-                logger.debug(f"Main Loop: Action = {Action}")
-                logger.debug(f"Main Loop: VISMODE = {os.environ.get('VISMODE')}")
+                # logger.debug(f"Main Loop: Action = {Action}")
+                # logger.debug(f"Main Loop: VISMODE = {os.environ.get('VISMODE')}")
                 if os.environ.get('VISMODE') == 'Single':
                     # Wait for the button press
                     if Action == "Single":
