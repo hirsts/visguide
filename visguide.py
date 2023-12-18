@@ -1,11 +1,10 @@
-import argparse
 import os
 import sys
 import fileinput
 import threading
 from threading import Lock
 # import requests
-from logging.handlers import SysLogHandler
+# from logging.handlers import SysLogHandler
 from dotenv import load_dotenv
 import cv2
 from PIL import Image
@@ -13,54 +12,113 @@ import numpy as np
 import base64
 import time
 import subprocess
-import logging
-# import errno
 import simpleaudio as sa
 from openai import OpenAI
 from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
 
-# ACTION: Get options from command line arguments
-# Update the below to accept an optional target host for syslog
+# ACTION: Import module to parse command line arguments
+import argparse
+
+# ACTION: Import logging modules
+import logging
+from logging.handlers import SysLogHandler
+
+# Custom Formatter with Session ID
+class CustomFormatter(logging.Formatter):
+    def __init__(self, session_id, fmt, datefmt):
+        self.session_id = session_id
+        super(CustomFormatter, self).__init__(fmt, datefmt)
+
+    def format(self, record):
+        original_message = super(CustomFormatter, self).format(record)
+        return f'[Session ID: {self.session_id}] {original_message}'
+
+# Parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-s", "--syslog", action="store_true")
 parser.add_argument("-t", "--target_host", type=str, help="Target host for syslog")
-
+parser.add_argument("-p", "--target_port", type=int, help="Target port for syslog")
 args = parser.parse_args()
 
-# ACTION: Set the logging level based on the verbose and debug options
-if args.verbose:
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=logging.INFO)
-elif args.debug:
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.WARNING)
-
-# If args.target_host is set, set the syslog server to the target host
-if args.target_host:
-    syslog_server = args.target_host
-else:
-    syslog_server = "splunk.local"
+# Generate a unique session ID
+session_id = os.urandom(8).hex()
 
 # Set the logging level based on the verbose and debug options
+if args.verbose:
+    logging_level = logging.INFO
+elif args.debug:
+    logging_level = logging.DEBUG
+else:
+    logging_level = logging.WARNING
+
+# Common format for both console and syslog
+common_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+date_format = '%Y-%m-%d %H:%M:%S'
+
+# Configure the root logger
 logger = logging.getLogger()
+logger.setLevel(logging_level)
 
-# If the syslog option is present, send logs to the syslog server
+# Create and set formatter with session ID for all handlers
+formatter = CustomFormatter(session_id, common_format, date_format)
+
+# Set syslog server
+syslog_server = args.target_host if args.target_host else "splunk.local"
+syslog_port = args.target_port if args.target_port else 8516
+
+# Add syslog handler if needed
 if args.syslog:
-    # format syslog message with milliseconds
-    syslog_format = logging.Formatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
-                                      datefmt='%Y-%m-%d %H:%M:%S')
-    # create syslog handler
-
-    syslog_handler = SysLogHandler(address=(syslog_server, 8516))
-    # set syslog handler format
-    syslog_handler.setFormatter(syslog_format)
+    syslog_handler = SysLogHandler(address=(syslog_server, syslog_port))
+    syslog_handler.setFormatter(formatter)
     logger.addHandler(syslog_handler)
+
+# Always add a console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# Example usage of the logger
+logger.debug("TIMING:Start TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:None")
+logger.info("Info message for testing")
+logger.warning("Warning message for testing")
+
+# Print directly to console for troubleshooting
+print("If this message appears but logging messages do not, there is an issue with logging configuration.")
+
+# # ACTION: Set the logging level based on the verbose and debug options
+# if args.verbose:
+#     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+#                         datefmt='%Y-%m-%d %H:%M:%S',
+#                         level=logging.INFO)
+# elif args.debug:
+#     logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+#                         datefmt='%Y-%m-%d %H:%M:%S',
+#                         level=logging.DEBUG)
+# else:
+#     logging.basicConfig(level=logging.WARNING)
+
+# # If args.target_host is set, set the syslog server to the target host
+# if args.target_host:
+#     syslog_server = args.target_host
+# else:
+#     syslog_server = "splunk.local"
+
+# # Set the logging level based on the verbose and debug options
+# logger = logging.getLogger()
+
+# # If the syslog option is present, send logs to the syslog server
+# if args.syslog:
+#     # format syslog message with milliseconds
+#     syslog_format = logging.Formatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+#                                       datefmt='%Y-%m-%d %H:%M:%S')
+#     # create syslog handler
+
+#     syslog_handler = SysLogHandler(address=(syslog_server, 8516))
+#     # set syslog handler format
+#     syslog_handler.setFormatter(syslog_format)
+#     logger.addHandler(syslog_handler)
 
 
 # FUNC: Define a function to check if the script is running on a Raspberry Pi
