@@ -20,10 +20,13 @@ from openai import OpenAI
 from elevenlabs import play, Voice, VoiceSettings, set_api_key, generate, stream
 
 # ACTION: Get options from command line arguments
+# Update the below to accept an optional target host for syslog
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-s", "--syslog", action="store_true")
+parser.add_argument("-t", "--target_host", type=str, help="Target host for syslog")
+
 args = parser.parse_args()
 
 # ACTION: Set the logging level based on the verbose and debug options
@@ -38,6 +41,11 @@ elif args.debug:
 else:
     logging.basicConfig(level=logging.WARNING)
 
+# If args.target_host is set, set the syslog server to the target host
+if args.target_host:
+    syslog_server = args.target_host
+else:
+    syslog_server = "splunk.local"
 
 # Set the logging level based on the verbose and debug options
 logger = logging.getLogger()
@@ -48,7 +56,8 @@ if args.syslog:
     syslog_format = logging.Formatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
                                       datefmt='%Y-%m-%d %H:%M:%S')
     # create syslog handler
-    syslog_handler = SysLogHandler(address=('splunk.local', 8516))
+
+    syslog_handler = SysLogHandler(address=(syslog_server, 8516))
     # set syslog handler format
     syslog_handler.setFormatter(syslog_format)
     logger.addHandler(syslog_handler)
