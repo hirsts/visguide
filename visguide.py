@@ -81,8 +81,12 @@ logger.debug("TIMING:Start TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:No
 logger.info("Info message for testing")
 logger.warning("Warning message for testing")
 
-# Print directly to console for troubleshooting
-print("If this message appears but logging messages do not, there is an issue with logging configuration.")
+# Splunk search to visualize the timing of the different functions
+# (index=visguide ("TIMING:Start" OR "TIMING:End"))
+# | transaction DESC SID startswith="TIMING:Start" endswith="TIMING:End" 
+# | eval duration=(duration * 1000) 
+# | table _time, DESC, duration
+# | sort _time
 
 # FUNC: Define a function to check if the script is running on a Raspberry Pi
 def is_running_on_raspberry_pi():
