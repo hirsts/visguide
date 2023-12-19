@@ -382,9 +382,10 @@ if not cap.isOpened():
     logger.warning("Failed to open webcam")
     raise IOError("Cannot open webcam")
     exit(1)
-# Wait for the camera to initialize and adjust light levels
-time.sleep(2)
-logger.debug("TIMING:End TYPE:Action DESC:Initialize the webcam RESULT:Webcam initialized")
+else:
+    # Wait for the camera to initialize and adjust light levels
+    # time.sleep(2)
+    logger.debug("TIMING:End TYPE:Action DESC:Initialize the webcam RESULT:Webcam initialized")
 
 # ACTION: Create an OpenAI client
 # logger.debug("TIMING:Start TYPE:Action DESC:Create OpenAI client RESULT:None")
@@ -482,7 +483,6 @@ def capture_image():
         logger.debug("TIMING:End TYPE:Func DESC:Capture image RESULT:Completed and returned frame")
         return frame
     else:
-        #logger.warning("Failed to capture image")
         logger.debug("TIMING:End TYPE:Func DESC:Capture image RESULT:Completed func but failed to capture image")
 
 # FUNC: Calls the ElevenLabs API to generate an audio stream and plays it

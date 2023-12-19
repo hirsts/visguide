@@ -356,6 +356,9 @@ def GPIO_press(channel):
     logger.debug("TIMING:End TYPE:Func DESC:GPIO_press RESULT:GPIO press executed")
 
 # Update the GPIO setup
+# After running "sudo rpi-update && sudo apt update && sudo apt upgrade -y" on the Raspberry Pi, the GPIO following needs to be applied
+# sudo chown root.gpio /dev/gpiomem
+# sudo chmod g+rw /dev/gpiomem
 logger.debug("TIMING:Start TYPE:Action DESC:If RPi load GPIO RESULT:None")
 if is_running_on_raspberry_pi():
     GPIO.setmode(GPIO.BCM)
