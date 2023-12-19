@@ -14,7 +14,7 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', delay=1, wi
     n = 0
     while True:
         ret, frame = cap.read()
-        cv2.imshow(window_name, frame)
+        # cv2.imshow(window_name, frame)
         key = cv2.waitKey(delay) & 0xFF
         if key == ord('c'):
             cv2.imwrite('{}_{}.{}'.format(base_path, n, ext), frame)
@@ -25,4 +25,4 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', delay=1, wi
     cv2.destroyWindow(window_name)
 
 
-save_frame_camera_key(0, 'data/temp', 'camera_capture')
+save_frame_camera_key(0, './frames/', 'camera_capture')
