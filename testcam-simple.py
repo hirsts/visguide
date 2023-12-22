@@ -1,11 +1,30 @@
 import cv2
 import os
 import logging
+from pynput import keyboard
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', delay=1, window_name='frame'):
+def on_press(key, cap, base_path, ext, n, listener):
+    try:
+        if key.char == 'c':  # Capturing the image
+            ret, frame = cap.read()
+            if not ret:
+                logging.error("Failed to read frame from camera.")
+                return False
+
+            file_name = '{}_{}.{}'.format(base_path, n[0], ext)
+            cv2.imwrite(file_name, frame)
+            logging.info(f"Captured frame saved as {file_name}")
+            n[0] += 1
+        elif key.char == 'q':  # Quitting the program
+            logging.info("Quitting.")
+            listener.stop()
+    except AttributeError:
+        pass  # Ignore other keypresses
+
+def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
     cap = cv2.VideoCapture(device_num)
 
     if not cap.isOpened():
@@ -14,34 +33,16 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', delay=1, wi
 
     os.makedirs(dir_path, exist_ok=True)
     base_path = os.path.join(dir_path, basename)
+    n = [0]  # Use a list to allow modification within on_press
 
-    # Create a minimal window for keypress events
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(window_name, 1, 1)
-
-    n = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            logging.error("Failed to read frame from camera.")
-            break
-
-        # Display an empty frame to capture keypress
-        cv2.imshow(window_name, frame)
-
-        key = cv2.waitKey(delay) & 0xFF
-        if key == ord('c'):
-            file_name = '{}_{}.{}'.format(base_path, n, ext)
-            cv2.imwrite(file_name, frame)
-            logging.info(f"Captured frame saved as {file_name}")
-            n += 1
-        elif key == ord('q'):
-            logging.info("Quitting.")
-            break
+    # Setting up the listener for keypresses
+    listener = keyboard.Listener(
+            on_press=lambda key: on_press(key, cap, base_path, ext, n, listener))
+    listener.start()
+    listener.join()
 
     # Properly release resources
     cap.release()
-    cv2.destroyAllWindows()
 
 logging.info("Press 'c' to capture a frame. Press 'q' to quit.")
 save_frame_camera_key(0, './frames/', 'camera_capture')
