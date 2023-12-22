@@ -39,9 +39,9 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
                 logging.info("Detected 'q' keypress. Quitting.")
                 break
         # Uncomment the following line to see any specific errors
-        # except Exception as e:
-        #     logging.error(f"Error occurred: {e}")
-        #     break
+        except Exception as e:
+            logging.error(f"Error occurred: {e}")
+            break
 
     # Properly release resources
     cap.release()
