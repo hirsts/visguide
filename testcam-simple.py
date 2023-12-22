@@ -6,7 +6,7 @@ import select
 import threading
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG, format=''%(asctime)s - %(levelname)s - %(message)s'')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def non_blocking_input(stop_event):
     while not stop_event.is_set():
