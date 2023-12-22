@@ -18,10 +18,11 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
 
     n = 0
     logging.info("Press 'c' to capture a frame. Press 'q' to quit.")
-    
+
     while True:
         try:
             if keyboard.is_pressed('c'):  # Capturing the image
+                logging.debug("Detected 'c' keypress.")
                 ret, frame = cap.read()
                 if not ret:
                     logging.error("Failed to read frame from camera.")
@@ -35,10 +36,12 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
                     pass  # Wait for key release
 
             if keyboard.is_pressed('q'):  # Quitting the program
-                logging.info("Quitting.")
+                logging.info("Detected 'q' keypress. Quitting.")
                 break
-        except:
-            break
+        # Uncomment the following line to see any specific errors
+        # except Exception as e:
+        #     logging.error(f"Error occurred: {e}")
+        #     break
 
     # Properly release resources
     cap.release()
