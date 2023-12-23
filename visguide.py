@@ -492,6 +492,9 @@ def capture_image():
             if not os.path.exists(folder):
                 logger.debug("Creating folder to store frames")
                 os.makedirs(folder, exist_ok=True)
+            else:
+                logger.debug("Folder to store frames already exists")
+                delete_frames(folder)
             path = f"{folder}/frame.jpg"
             logger.debug(f"Saving frame to {path}")
             cv2.imwrite(path, frame_jpg)
@@ -606,7 +609,7 @@ def single_loop():
     analysis = analyze_image(base64_image, script=script)
     timings['analysis'] += time.time() - analysis_start_time
     logger.debug(f"TIMING:Start TYPE:Action DESC:single_loop call analyze_image RESULT:{analysis}")
-
+    del base64_image
     logger.info("🎙️ VisGuide says:")
     logger.info(analysis)
 
