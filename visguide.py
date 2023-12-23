@@ -100,6 +100,17 @@ def is_running_on_raspberry_pi():
         logger.debug("TIMING:End TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:False")
         return False
     
+def delete_frames(directory):
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
+        try:
+            os.remove(file_path)
+            logging.info(f"Deleting file: {file_path}")
+        except FileNotFoundError:
+            logging.error(f"File not found: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting file {file_path}: {e}")
+    
 def reload_camera_driver(module_name):
     try:
         # Unload the camera module
