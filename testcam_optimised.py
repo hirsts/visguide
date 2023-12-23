@@ -3,6 +3,7 @@ import os
 import logging
 import sys
 import select
+import subprocess
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
