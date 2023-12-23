@@ -57,4 +57,4 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', resolution=
 
 
 
-save_frame_camera_key(0, './frames/', 'camera_capture', resolution=(640, 480))
+save_frame_camera_key(0, './frames/', 'camera_capture', resolution=(1280, 720))
