@@ -19,12 +19,16 @@ def non_blocking_input(stop_event):
                 logging.info("Captured keypress 'q'")
                 stop_event.set()
 
-def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
+def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', resolution=(1280, 720)):
     cap = cv2.VideoCapture(device_num)
 
     if not cap.isOpened():
         logging.error("Camera not opened.")
         return
+
+    # Set the resolution
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
 
     os.makedirs(dir_path, exist_ok=True)
     base_path = os.path.join(dir_path, basename)
@@ -55,4 +59,4 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg'):
     # Properly release resources
     cap.release()
 
-save_frame_camera_key(0, './frames/', 'camera_capture')
+save_frame_camera_key(0, './frames/', 'camera_capture', resolution=(1280, 720))
