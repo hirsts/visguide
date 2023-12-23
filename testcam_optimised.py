@@ -6,7 +6,7 @@ import select
 import subprocess
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format=''%(asctime)s - %(levelname)s - %(message)s')
 
 FRAMES_DIR = './frames'
 EXT = 'jpg'
@@ -52,7 +52,9 @@ def save_frame_camera_key(device_num, dir_path, basename, resolution=(1280, 720)
     base_path = os.path.join(dir_path, basename)
 
     logging.info("Type 'c' to capture a frame, followed by Enter. Type 'q' to quit, followed by Enter.")
-    for n in enumerate():
+    
+    n = 0  # Initialize frame counter
+    while True:
         ret, frame = cap.read()
         if not ret:
             logging.error("Failed to read frame from camera.")
@@ -65,12 +67,14 @@ def save_frame_camera_key(device_num, dir_path, basename, resolution=(1280, 720)
                 file_name = f'{base_path}_{n}.{EXT}'
                 cv2.imwrite(file_name, frame)
                 logging.info(f"Captured frame saved as {file_name}")
+                n += 1  # Increment frame counter
             elif line == 'q':
                 logging.info("Quitting.")
                 break
 
     cap.release()
-# Reload the camera driver to ensure its loaded properly
+
+# Reload the camera driver to ensure it's loaded properly
 reload_camera_driver('bcm2835-v4l2')
 
 # Delete all frames in the frames directory
