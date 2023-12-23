@@ -4,6 +4,10 @@ import logging
 import sys
 import select
 
+# Delete all frames in the frames directory
+for file in os.listdir('./frames'):
+    os.remove(os.path.join('./frames', file))
+
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -45,9 +49,7 @@ def save_frame_camera_key(device_num, dir_path, basename, ext='jpg', resolution=
     # Properly release resources
     cap.release()
 
-# Delete all frames in the frames directory
-for file in os.listdir('./frames'):
-    os.remove(os.path.join('./frames', file))
-    
+
+
 
 save_frame_camera_key(0, './frames/', 'camera_capture', resolution=(640, 480))
