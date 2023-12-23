@@ -6,7 +6,12 @@ import select
 
 # Delete all frames in the frames directory
 for file in os.listdir('./frames'):
-    os.remove(os.path.join('./frames', file))
+    file_path = os.path.join('./frames', file)
+    logging.info(f"Deleting file: {file_path}")
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        logging.error(f"Error deleting file {file_path}: {e}")
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
