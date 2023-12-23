@@ -99,6 +99,18 @@ def is_running_on_raspberry_pi():
     except Exception:
         logger.debug("TIMING:End TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:False")
         return False
+    
+def reload_camera_driver(module_name):
+    try:
+        # Unload the camera module
+        subprocess.run(['sudo', 'modprobe', '-r', module_name], check=True)
+        logging.info(f"Camera driver {module_name} unloaded successfully.")
+        
+        # Load the camera module
+        subprocess.run(['sudo', 'modprobe', module_name], check=True)
+        logging.info(f"Camera driver {module_name} loaded successfully.")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to reload camera driver: {e}")
 
 # ACTION: Conditional imports for Raspberry Pi specific modules
 if is_running_on_raspberry_pi():
