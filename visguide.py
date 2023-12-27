@@ -161,6 +161,7 @@ global Action, script, timings
 Action = "None"
 interrupt_main_process = False
 stop_audio_stream = False
+imagenum = 0
 logger.debug("TIMING:End TYPE:Action DESC:Define global variables RESULT:Done")
 
 # FUNC: Space Key press event handler
@@ -465,6 +466,7 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
 
 # FUNC: Capture an image from the webcam and return it as a base64 encoded string
 def capture_image():
+    global imagenum
     logger.debug("TIMING:Start TYPE:Func DESC:Capture image RESULT:None")
     ret, frame = cap.read()
     if ret:
@@ -495,7 +497,8 @@ def capture_image():
             else:
                 logger.debug("Folder to store frames already exists")
                 delete_frames(folder)
-            path = f"{folder}/frame.jpg"
+            imagenum += 1
+            path = f"{folder}/frame{imagenum}.jpg"
             logger.debug(f"Saving frame to {path}")
             cv2.imwrite(path, frame_jpg)
             logger.debug("TIMING:End TYPE:Sub Func DESC:Write image to file RESULT:File written to disk")
