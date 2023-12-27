@@ -468,6 +468,13 @@ def check_internet(timeout=60, max_response_time=30):  # Default timeout is 60 s
 def capture_image():
     global imagenum
     logger.debug("TIMING:Start TYPE:Func DESC:Capture image RESULT:None")
+
+    # Clear the camera buffer by reading a few frames
+    logger.debug("TIMING:Start TYPE:Sub Func DESC:Clear camera buffer RESULT:None")
+    for _ in range(5):  # Adjust the range as needed
+        cap.read()  # Read and discard frame
+    logger.debug("TIMING:End TYPE:Sub Func DESC:Clear camera buffer RESULT:Camera buffer cleared")
+
     ret, frame = cap.read()
     if ret:
         # Convert the frame to a PIL image
