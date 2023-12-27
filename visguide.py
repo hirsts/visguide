@@ -470,6 +470,7 @@ def capture_image():
     logger.debug("TIMING:Start TYPE:Func DESC:Capture image RESULT:None")
 
     # Clear the camera buffer by reading a few frames
+    # This fixed the issue of the same image being used each time
     logger.debug("TIMING:Start TYPE:Sub Func DESC:Clear camera buffer RESULT:None")
     for _ in range(5):  # Adjust the range as needed
         cap.read()  # Read and discard frame
