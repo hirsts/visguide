@@ -478,6 +478,10 @@ def capture_image():
 
     ret, frame = cap.read()
     if ret:
+
+        # Mirror the image
+        frame = cv2.flip(frame, 1)
+
         # Convert the frame to a PIL image
         pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
