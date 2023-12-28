@@ -162,6 +162,7 @@ Action = "None"
 interrupt_main_process = False
 stop_audio_stream = False
 imagenum = 0
+voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
 logger.debug("TIMING:End TYPE:Action DESC:Define global variables RESULT:Done")
 
 # FUNC: Space Key press event handler
@@ -256,9 +257,10 @@ def replace_line_in_file(file_path, line_starts_with, new_line):
 # FUNC: Handlers for different press types
 def handle_single_press(press_duration):
     logger.debug("TIMING:Start TYPE:Func DESC:handle_single_press RESULT:None")
-    global context, Action, interrupt_main_process
+    global context, Action, interrupt_main_process, voice_id
     if press_duration < SINGLE_PRESS_MAX:
         logger.info("Single Press Detected")
+        voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
         # Set the stop_audio_stream flag to True
         stop_audio_stream = True
         # Set the Action variable to equal Single
@@ -278,7 +280,8 @@ def handle_single_press(press_duration):
 
 def handle_double_press():
     logger.debug("TIMING:Start TYPE:Func DESC:handle_double_press RESULT:None")
-    global context, press_count, Action, stop_audio_stream
+    global context, press_count, Action, stop_audio_stream, voice_id
+    voice_id = os.environ.get("TOURIST_VOICE_ID")
     press_count = 0
     logger.info("Double Press Detected")
     # Implement double press action
@@ -297,13 +300,14 @@ def handle_double_press():
 
 def handle_triple_press():
     logger.debug("TIMING:Start TYPE:Func DESC:handle_triple_press RESULT:None")
-    global press_count
+    global press_count, voice_id
     press_count = 0
     logger.info("Triple Press Detected")
     # Implement triple press action
     # Toggle the style based on the current style
     if os.environ.get('VISSTYLE') == 'Guide':
         os.environ['VISSTYLE'] = 'Tourist'
+        voice_id = os.environ.get("TOURIST_VOICE_ID") 
         # Play the user warning audio file
         wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_tourist_style_narration.wav")
         play_obj = wave_obj.play()
@@ -312,6 +316,7 @@ def handle_triple_press():
 
     elif os.environ.get('VISSTYLE') == 'Tourist':
         os.environ['VISSTYLE'] = 'Guide'
+        voice_id = os.environ.get("ELEVENLABS_VOICE_ID") 
         # Play the user warning audio file
         wave_obj = sa.WaveObject.from_wave_file("./assets/wav/You_have_selected_guide_style_narration.wav")
         play_obj = wave_obj.play()
@@ -526,12 +531,11 @@ def capture_image():
 # FUNC: Calls the ElevenLabs API to generate an audio stream and plays it
 def play_audio(text):
     logger.debug("TIMING:Start TYPE:Func DESC:play_audio RESULT:None")
-    global stop_audio_stream
+    global stop_audio_stream, voice_id
     #logger.debug(f"play_audio func started - stop_audio_stream = {stop_audio_stream}")
     stop_audio_stream = False
     #logger.debug(f"play_audio func step 2 - stop_audio_stream = {stop_audio_stream}")
     set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
-    voice_id = os.environ.get("ELEVENLABS_VOICE_ID") 
     try:
         # Calls the ElevenLabs API to generate an audio stream
         logger.debug("TIMING:Start TYPE:Sub Func DESC:generate audio using Elevenlabs RESULT:None")
@@ -539,7 +543,7 @@ def play_audio(text):
         audio_stream = generate(
             text=text,
             voice=Voice(
-                voice_id=os.environ.get("ELEVENLABS_VOICE_ID"),
+                voice_id=(f"{voice_id}"),
                 settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)),
             model="eleven_turbo_v2",
             stream=True,
