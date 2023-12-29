@@ -1,4 +1,5 @@
 import subprocess
+import time
 
 def get_connected_devices():
     try:
@@ -22,8 +23,10 @@ def is_device_connected(device_name):
 # The name of your Bluetooth device
 device_name = "Jabra Speak 710"
 
-if is_device_connected(device_name):
-    print(f"Device '{device_name}' is connected.")
-else:
-    print(f"Device '{device_name}' is not connected.")
+# Loop until the device is connected
+while not is_device_connected(device_name):
+    print(f"Device '{device_name}' is not connected. Checking again in 1 second.")
+    time.sleep(1)  # Wait for 1 second before checking again
 
+# Once the loop is exited, the device is connected
+print(f"Device '{device_name}' is connected.")
