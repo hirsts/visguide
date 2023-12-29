@@ -1,5 +1,6 @@
 import subprocess
 import time
+import sys
 
 def get_connected_devices():
     try:
@@ -25,8 +26,10 @@ device_name = "Jabra Speak 710"
 
 # Loop until the device is connected
 while not is_device_connected(device_name):
-    print(f"Device '{device_name}' is not connected. Checking again in 1 second.")
+    sys.stdout.write(f"\rDevice '{device_name}' is not connected. Checking again...")
+    sys.stdout.flush()  # Flush the buffer to ensure the output is displayed
     time.sleep(1)  # Wait for 1 second before checking again
 
 # Once the loop is exited, the device is connected
-print(f"Device '{device_name}' is connected.")
+sys.stdout.write(f"\rDevice '{device_name}' is connected.                            \n")
+sys.stdout.flush()
