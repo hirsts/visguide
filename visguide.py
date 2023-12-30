@@ -734,9 +734,9 @@ def main():
             logger.info(f"{operation}: {time_taken:.2f} seconds")
 
 # Reload the camera driver
-logger.debug("TIMING:Start TYPE:Action DESC:Reload camera driver RESULT:None")
-reload_camera_driver("bcm2835-v4l2")
-logger.debug("TIMING:End TYPE:Action DESC:Reload camera driver RESULT:Camera driver reloaded")
+# logger.debug("TIMING:Start TYPE:Action DESC:Reload camera driver RESULT:None")
+# reload_camera_driver("bcm2835-v4l2")
+# logger.debug("TIMING:End TYPE:Action DESC:Reload camera driver RESULT:Camera driver reloaded")
     
 # Check for internet connectivity by pinging Google DNS
 while not check_internet(timeout=60, max_response_time=100):
