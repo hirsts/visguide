@@ -100,6 +100,29 @@ def is_running_on_raspberry_pi():
         logger.debug("TIMING:End TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:False")
         return False
 
+# FUNC: A function to set the default PulseAudio sink (audio output)
+# When running at start up the session audio is routed to the HDMI output
+# This function is used after checking that the BT speaker it connected to route the session audio to the BT speaker
+def set_default_sink(sink_index):
+    """
+    Sets the default PulseAudio sink (audio output) to the given sink index.
+
+    Parameters:
+    sink_index (str): The index or name of the PulseAudio sink to set as default.
+    """
+    try:
+        # Constructing the command
+        command = ["pactl", "set-default-sink", str(sink_index)]
+
+        # Executing the command
+        subprocess.run(command, check=True)
+        print(f"Default sink set to {sink_index}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
 # FUNC: A function to get the list of connected Bluetooth devices
 def get_connected_devices():
     try:
@@ -159,6 +182,9 @@ if is_running_on_raspberry_pi():
         sys.stdout.write(f"\rDevice '{device_name}' is not connected. Checking again...")
         sys.stdout.flush()  # Flush the buffer to ensure the output is displayed
         time.sleep(1)  # Wait for 1 second before checking again
+    # Once connected, set the default audio output to the Bluetooth speaker
+    set_default_sink("1")
+    logger.debug("TIMING:End TYPE:Action DESC:Check if Bluetooth device is connected RESULT:Device connected")
 else:
     import keyboard
     logger.debug("TIMING:End TYPE:Action DESC:is_running_on_raspberry_pi() RESULT:RPi.GPIO not imported. keyboard imported")
