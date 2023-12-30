@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the log file
-LOG_FILE="/var/log/visguide.log"
+LOG_FILE="/home/shirst/visguide/visguide.log"
 
 # Navigate to the visguide directory
 cd /home/shirst/visguide >> $LOG_FILE 2>&1
