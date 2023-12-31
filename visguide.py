@@ -196,7 +196,7 @@ if is_running_on_raspberry_pi():
     logger.debug("TIMING:Start TYPE:Action DESC:Check if Bluetooth device is connected RESULT:None")
     device_name = "Jabra Speak 710"
     # Loop until the device is connected
-    while not wait_for_device_and_sink(device_name):
+    while not is_device_connected(device_name):
         sys.stdout.write(f"\rDevice '{device_name}' is not connected. Checking again...")
         sys.stdout.flush()  # Flush the buffer to ensure the output is displayed
         time.sleep(1)  # Wait for 1 second before checking again
