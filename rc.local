@@ -1,0 +1,37 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+LOG_FILE="/var/log/rc.local.log"
+
+# Function to log a message
+log_message() {
+    echo "$(date +"%Y-%m-%d %T") - $1" >> $LOG_FILE
+}
+
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP" >> $LOG_FILE
+fi
+
+# Log the start of visguide execution
+log_message "Starting visguide"
+
+# Run visguide
+# To make sure that visguide can read the GPIO's pins as a non-root user, the permissions of /dev/gpiomem need to be set at boot time
+chmod 777 /dev/gpiomem >> $LOG_FILE 2>&1
+# This command runs visguide in a screen that you can attach to later.
+# The first export command make sure that the session uses the users runtime environment settings and without this bluetooth will not work.
+sudo -u shirst screen -dmS visguide bash -c "export XDG_RUNTIME_DIR=/run/user/$(id -u shirst); source ~/.bash_profile; cd /home/shirst/visguide; source /home/shirst/visguide/visguide-env/bin/activate; python visguide.py"
+# Log script end
+log_message "rc.local script finished"

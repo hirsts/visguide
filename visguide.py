@@ -78,8 +78,6 @@ logger.addHandler(console_handler)
 
 # Example usage of the logger
 logger.debug("TIMING:Start TYPE:Func DESC:is_running_on_raspberry_pi() RESULT:None")
-logger.info("Info message for testing")
-logger.warning("Warning message for testing")
 
 # Splunk search to visualize the timing of the different functions
 # (index=visguide ("TIMING:Start" OR "TIMING:End"))
