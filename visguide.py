@@ -144,25 +144,6 @@ def is_device_connected(device_name):
 
     return False
 
-def is_sink_ready():
-    try:
-        cmd = "pactl list sinks short"
-        result = subprocess.check_output(cmd, shell=True, text=True)
-        return "bluez_sink.70_BF_92_A2_DA_5E.a2dp_sink" in result and "SUSPENDED" in result
-    except subprocess.CalledProcessError as e:
-        print(f"Error checking sink status: {e}")
-        return False
-
-def wait_for_device_and_sink(device_name, timeout=60):
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        if is_device_connected(device_name) and is_sink_ready():
-            print("Device and sink are ready.")
-            return True
-        time.sleep(1)  # Wait for 1 second before checking again
-    print("Timeout waiting for device and sink.")
-    return False
-
 def delete_frames(directory):
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
@@ -201,6 +182,8 @@ if is_running_on_raspberry_pi():
         sys.stdout.flush()  # Flush the buffer to ensure the output is displayed
         time.sleep(1)  # Wait for 1 second before checking again
     # Once connected, set the default audio output to the Bluetooth speaker
+    # Pause to let the PulseAudio service start if the BT speaker was just connected 
+    time.sleep(2)
     set_default_sink("1")
     logger.debug("TIMING:End TYPE:Action DESC:Check if Bluetooth device is connected RESULT:Device connected")
 else:
