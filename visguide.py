@@ -181,6 +181,7 @@ if is_running_on_raspberry_pi():
         sys.stdout.write(f"\rDevice '{device_name}' is not connected. Checking again...")
         sys.stdout.flush()  # Flush the buffer to ensure the output is displayed
         time.sleep(1)  # Wait for 1 second before checking again
+    
     # Once connected, set the default audio output to the Bluetooth speaker
     # Pause to let the PulseAudio service start if the BT speaker was just connected 
     time.sleep(2)
